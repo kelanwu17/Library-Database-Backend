@@ -37,7 +37,7 @@ router.post("/createAdmin", (req, res) => {
     }
     const currentTime = moment();
     const insertSql =
-      "INSERT INTO admin (userName, password, firstName, lastName, email, phone, DOB, roles, activeAdmin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+      "INSERT INTO admin (userName, password, firstName, lastName, email, phone, DOB, roles, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     db.query(
       insertSql,

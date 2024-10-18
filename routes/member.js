@@ -18,7 +18,7 @@ router.get("/", (req, res) => {
 //add new member
 router.post("/createMember", (req, res) => {
   const {
-    userName,
+    username,
     password,
     firstName,
     lastName,
@@ -31,8 +31,8 @@ router.post("/createMember", (req, res) => {
   const currentTime = moment();
 
   // First, check for existing email or username
-  const checkSql = "SELECT * FROM member WHERE email = ? OR userName = ?";
-  db.query(checkSql, [email, userName], (checkErr, checkResult) => {
+  const checkSql = "SELECT * FROM member WHERE email = ? OR username = ?";
+  db.query(checkSql, [email, username], (checkErr, checkResult) => {
     if (checkErr) {
       console.error(checkErr);
       return res.status(500).send("Error checking user existence");
@@ -43,17 +43,17 @@ router.post("/createMember", (req, res) => {
       if (existingUser.email === email) {
         return res.status(400).send("Email already in use");
       }
-      if (existingUser.userName === userName) {
+      if (existingUser.username === username) {
         return res.status(400).send("Username already in use");
       }
     }
     const insertSql =
-      "INSERT INTO member (userName, password, firstName, lastName, email, phone, DOB, preferences, createdAt, updatedAt, accountStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+      "INSERT INTO member (username, password, firstName, lastName, email, phone, DOB, preferences, createdAt, updatedAt, accountStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)";
 
     db.query(
       insertSql,
       [
-        userName,
+        username,
         password,
         firstName,
         lastName,
@@ -61,8 +61,6 @@ router.post("/createMember", (req, res) => {
         phone,
         DOB,
         preferences,
-        currentTime.format("YYYY-MM-DD HH:mm:ss"),
-        currentTime.format("YYYY-MM-DD HH:mm:ss"),
         true,
       ],
       (insertErr, insertResult) => {
@@ -87,15 +85,14 @@ router.put("/updateMember=:id", (req, res) => {
     DOB,
     preferences,
   } = req.body;
-  const currentTime = moment();
+
   const sql = `UPDATE member SET 
     firstName = ?, 
     lastName = ?, 
     email = ?, 
     phone = ?, 
     DOB = ?, 
-    preferences = ?, 
-    updatedAt = ?
+    preferences = ? 
     WHERE memberId = ?`;
   db.query(
     sql,
@@ -106,7 +103,6 @@ router.put("/updateMember=:id", (req, res) => {
       phone,
       DOB,
       preferences,
-      currentTime.format("YYYY-MM-DD HH:mm:ss"),
       id,
     ],
     (err, result) => {

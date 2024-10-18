@@ -16,7 +16,7 @@ router.post("/createTechnology", (req, res) => {
   const {
     deviceName,
     modelNumber,
-    techCount,
+    count,
     availabilityStatus,
     monetaryValue,
     lastUpdatedBy,
@@ -39,7 +39,7 @@ router.post("/createTechnology", (req, res) => {
         INSERT INTO technology (
           deviceName,
           modelNumber,
-          techCount,
+          count,
           availabilityStatus,
           monetaryValue,
           lastUpdatedBy,
@@ -52,7 +52,7 @@ router.post("/createTechnology", (req, res) => {
       [
         deviceName,
         modelNumber,
-        techCount,
+        count,
         availabilityStatus,
         monetaryValue,
         lastUpdatedBy,
@@ -63,55 +63,132 @@ router.post("/createTechnology", (req, res) => {
           console.error("Database Error:", err.message);
           return res.status(500).send("Database Error: " + err.message);
         }
+
+        // Create instances based on count
+        for (let i = 0; i < count; i++) {
+          const instanceInsertSql = `
+            INSERT INTO technologyInstance (techId, isMissing, checkedOutStatus)
+            VALUES (?, ?, ?)
+          `;
+          db.query(
+            instanceInsertSql,
+            [result.insertId, false, false], // false for isMissing and checkedOutStatus
+            (instanceErr) => {
+              if (instanceErr) {
+                console.error("Error creating instance:", instanceErr);
+                return res.status(500).send("Error creating technology instances");
+              }
+            }
+          );
+        }
+
         res.status(201).send("Technology added successfully");
       }
     );
   });
 });
-
 router.put("/updateTechnology=:id", (req, res) => {
   const { id } = req.params;
   const {
     deviceName,
     modelNumber,
-    techCount,
+    count,
     availabilityStatus,
     monetaryValue,
     lastUpdatedBy,
     imgUrl,
   } = req.body;
-  const sql = `UPDATE technology SET 
-    deviceName = ?,
-          modelNumber = ?,
-          techCount = ?,
-          availabilityStatus = ?,
-          monetaryValue = ?,
-          lastUpdatedBy = ?,
-          imgUrl = ? WHERE techId = ?`;
-  db.query(
-    sql,
-    [
-      deviceName,
-      modelNumber,
-      techCount,
-      availabilityStatus,
-      monetaryValue,
-      lastUpdatedBy,
-      imgUrl,
-      id,
-    ],
-    (err, result) => {
-      if (err) {
-        console.error("Error updating technology: " + err.message);
-        return res.status(500).send("Error updating technology in database");
-      }
-      if (result.affectRows === 0) {
-        return res.status(404).send("Technology not found");
-      }
-      res.status(200).send(`Technology: ${id} successfully updated`);
+
+  // First, get the current count of instances for the technology
+  const getCountSql = "SELECT count FROM technology WHERE techId = ?";
+  db.query(getCountSql, [id], (getCountErr, getCountResult) => {
+    if (getCountErr) {
+      console.error("Error retrieving current count: " + getCountErr.message);
+      return res.status(500).send("Error retrieving count");
     }
-  );
+
+    if (getCountResult.length === 0) {
+      return res.status(404).send("Technology not found");
+    }
+
+    const currentcount = getCountResult[0].count;
+
+    // Update technology
+    const updateSql = `UPDATE technology SET 
+      deviceName = ?,
+      modelNumber = ?,
+      count = ?,
+      availabilityStatus = ?,
+      monetaryValue = ?,
+      lastUpdatedBy = ?,
+      imgUrl = ? WHERE techId = ?`;
+
+    db.query(
+      updateSql,
+      [
+        deviceName,
+        modelNumber,
+        count,
+        availabilityStatus,
+        monetaryValue,
+        lastUpdatedBy,
+        imgUrl,
+        id,
+      ],
+      (err, result) => {
+        if (err) {
+          console.error("Error updating technology: " + err.message);
+          return res.status(500).send("Error updating technology in database");
+        }
+        if (result.affectedRows === 0) {
+          return res.status(404).send("Technology not found");
+        }
+
+        // Adjust instances if the count has changed
+        if (count !== currentcount) {
+          if (count > currentcount) {
+            // Need to add instances
+            const instancesToAdd = count - currentcount;
+            for (let i = 0; i < instancesToAdd; i++) {
+              const instanceInsertSql = `
+                INSERT INTO technologyInstance (techId, isMissing, checkedOutStatus)
+                VALUES (?, ?, ?)
+              `;
+              db.query(
+                instanceInsertSql,
+                [id, false, false], // false for isMissing and checkedOutStatus
+                (instanceErr) => {
+                  if (instanceErr) {
+                    console.error("Error creating instance:", instanceErr);
+                    return res.status(500).send("Error creating technology instances");
+                  }
+                }
+              );
+            }
+          } else {
+            // Need to remove excess instances
+            const instancesToRemove = currentcount - count;
+            const removeSql = `
+              DELETE FROM technologyInstance 
+              WHERE techId = ? 
+              ORDER BY instanceId 
+              LIMIT ?
+            `;
+            db.query(removeSql, [id, instancesToRemove], (removeErr) => {
+              if (removeErr) {
+                console.error("Error removing instances:", removeErr);
+                return res.status(500).send("Error removing technology instances");
+              }
+            });
+          }
+        }
+
+        res.status(200).send(`Technology: ${id} successfully updated`);
+      }
+    );
+  });
 });
+
 
 router.delete("/deleteTechnology=:id", (req, res) => {
   const sql = "DELETE FROM technology WHERE techId = ?";
