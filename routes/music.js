@@ -2,16 +2,19 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
 
+// Get all music entries
 router.get("/", (req, res) => {
   const sql = "SELECT * FROM music";
   db.query(sql, (err, result) => {
     if (err) {
+      console.error("Error getting music from database:", err);
       return res.status(500).send("Error getting music from database.");
     }
-    res.json(result);
+    res.status(200).json(result);
   });
 });
 
+// Add new music entry
 router.post("/createMusic", (req, res) => {
   const {
     musicGenre,
@@ -25,27 +28,19 @@ router.post("/createMusic", (req, res) => {
     imgUrl,
   } = req.body;
 
-  const checkAlbumAndArtistSql =
-    "SELECT * FROM music WHERE artist = ? AND albumName = ?";
+  const checkAlbumAndArtistSql = "SELECT * FROM music WHERE artist = ? AND albumName = ?";
   db.query(checkAlbumAndArtistSql, [artist, albumName], (checkErr, checkResult) => {
     if (checkErr) {
-      console.error(checkErr.message);
-      return res.status(500).send("Error checking album/artist in db");
+      console.error("Error checking album/artist in DB:", checkErr.message);
+      return res.status(500).send("Error checking album/artist in DB");
     }
 
     if (checkResult.length > 0) {
       return res.status(400).send("Music already exists");
     }
 
-    const insertSql = `INSERT INTO music (musicGenre,
-      artist,
-      dateReleased,
-      count,
-      albumName,
-      monetaryValue,
-      availabilityStatus,
-      lastUpdatedBy,
-      imgUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const insertSql = `INSERT INTO music (musicGenre, artist, dateReleased, count, albumName, monetaryValue, availabilityStatus, lastUpdatedBy, imgUrl) 
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     
     db.query(insertSql, [
       musicGenre,
@@ -59,28 +54,32 @@ router.post("/createMusic", (req, res) => {
       imgUrl,
     ], (err, result) => {
       if (err) {
-        return res.status(500).send("Database Error:" + err.message);
+        console.error("Database error:", err.message);
+        return res.status(500).send("Database error: " + err.message);
       }
 
       // Create instances based on count
       const insertInstanceSql = "INSERT INTO musicinstance (musicId, checkedOutStatus, isMissing) VALUES (?, ?, ?)";
-      const promises = [];
-      for (let i = 0; i < count; i++) {
-        promises.push(new Promise((resolve, reject) => {
+      const promises = Array.from({ length: count }, () => {
+        return new Promise((resolve, reject) => {
           db.query(insertInstanceSql, [result.insertId, false, false], (instanceErr) => {
             if (instanceErr) reject(instanceErr);
             else resolve();
           });
-        }));
-      }
+        });
+      });
 
       Promise.all(promises)
         .then(() => res.status(201).send("Music and instances added successfully"))
-        .catch((instanceErr) => res.status(500).send("Error creating instances: " + instanceErr.message));
+        .catch((instanceErr) => {
+          console.error("Error creating instances:", instanceErr.message);
+          res.status(500).send("Error creating instances: " + instanceErr.message);
+        });
     });
   });
 });
 
+// Update existing music entry
 router.put("/updateMusic=:id", (req, res) => {
   const { id } = req.params;
   const {
@@ -95,27 +94,25 @@ router.put("/updateMusic=:id", (req, res) => {
     imgUrl,
   } = req.body;
 
-  // Step 1: Get the current count of instances
+  // Get the current count of instances
   const getCurrentCountSql = "SELECT count FROM music WHERE musicId = ?";
   db.query(getCurrentCountSql, [id], (err, result) => {
     if (err) {
-      console.error("Error fetching current music count: " + err.message);
+      console.error("Error fetching current music count:", err.message);
       return res.status(500).send("Error fetching current music count");
+    }
+
+    if (result.length === 0) {
+      return res.status(404).send("Music not found");
     }
 
     const currentCount = result[0].count;
 
-    // Step 2: Update the music record
+    // Update the music record
     const updateSql = `UPDATE music SET
-      musicGenre = ?,
-      artist = ?,
-      dateReleased = ?,
-      count = ?,
-      albumName = ?,
-      monetaryValue = ?,
-      availabilityStatus = ?,
-      lastUpdatedBy = ?,
-      imgUrl = ? 
+      musicGenre = ?, artist = ?, dateReleased = ?, count = ?, 
+      albumName = ?, monetaryValue = ?, availabilityStatus = ?, 
+      lastUpdatedBy = ?, imgUrl = ? 
       WHERE musicId = ?`;
 
     db.query(updateSql, [
@@ -131,7 +128,7 @@ router.put("/updateMusic=:id", (req, res) => {
       id,
     ], (err, updateResult) => {
       if (err) {
-        console.error("Error updating music: " + err.message);
+        console.error("Error updating music:", err.message);
         return res.status(500).send("Error updating music in database");
       }
 
@@ -139,25 +136,27 @@ router.put("/updateMusic=:id", (req, res) => {
         return res.status(404).send("Music not found");
       }
 
-      // Step 3: Handle instances based on the updated count
+      // Handle instances based on the updated count
       if (currentCount < count) {
         // Add new instances
         const instancesToAdd = count - currentCount;
         const insertInstanceSql = "INSERT INTO musicinstance (musicId, checkedOutStatus) VALUES (?, ?)";
         
-        const promises = [];
-        for (let i = 0; i < instancesToAdd; i++) {
-          promises.push(new Promise((resolve, reject) => {
+        const promises = Array.from({ length: instancesToAdd }, () => {
+          return new Promise((resolve, reject) => {
             db.query(insertInstanceSql, [id, false], (instanceErr) => {
               if (instanceErr) reject(instanceErr);
               else resolve();
             });
-          }));
-        }
+          });
+        });
 
         Promise.all(promises)
           .then(() => res.status(200).send(`Music: ${id} successfully updated, added ${instancesToAdd} new instances`))
-          .catch((instanceErr) => res.status(500).send("Error creating instances: " + instanceErr.message));
+          .catch((instanceErr) => {
+            console.error("Error creating instances:", instanceErr.message);
+            res.status(500).send("Error creating instances: " + instanceErr.message);
+          });
       } else if (currentCount > count) {
         // Remove instances if count decreased
         const instancesToRemove = currentCount - count;
@@ -168,6 +167,7 @@ router.put("/updateMusic=:id", (req, res) => {
 
         db.query(deleteInstanceSql, [id, instancesToRemove], (err) => {
           if (err) {
+            console.error("Error deleting instances:", err.message);
             return res.status(500).send("Error deleting instances: " + err.message);
           }
           res.status(200).send(`Music: ${id} successfully updated, removed ${instancesToRemove} instances`);
@@ -180,16 +180,21 @@ router.put("/updateMusic=:id", (req, res) => {
   });
 });
 
-
+// Delete music entry
 router.delete("/deleteMusic=:id", (req, res) => {
   const sql = "DELETE FROM music WHERE musicId = ?";
   const id = req.params.id;
+
   db.query(sql, [id], (err, result) => {
     if (err) {
-      console.log("Error deleting book: ", err.message);
+      console.error("Error deleting music:", err.message);
       return res.status(500).send("Error deleting music");
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).send("Music not found");
     }
     res.status(200).send(`Music ${id} successfully deleted`);
   });
 });
+
 module.exports = router;

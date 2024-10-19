@@ -2,201 +2,166 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
 
+// Get all books
 router.get("/", (req, res) => {
   const sql = "SELECT * FROM books";
   db.query(sql, (err, result) => {
     if (err) {
+      console.error("Error getting books:", err);
       return res.status(500).send("Error getting books from database.");
     }
     res.json(result);
   });
 });
 
+// Create a new book with instances
 router.post("/createBook", (req, res) => {
   const {
-    title,
-    genre,
-    ageCategory,
-    count,
-    aisle,
-    description,
-    author,
-    isbn,
-    publisher,
-    edition,
-    monetaryValue,
-    lastUpdatedBy,
-    imgUrl,
+    title, genre, ageCategory, count, aisle, description, author, isbn,
+    publisher, edition, monetaryValue, lastUpdatedBy, imgUrl,
   } = req.body;
 
-  // Check existing ISBN
   const checkIsbnSql = "SELECT * FROM books WHERE isbn = ?";
   db.query(checkIsbnSql, [isbn], (checkErr, checkResult) => {
     if (checkErr) {
-      return res.status(500).send("Error checking ISBN existence");
+      console.error("Error checking ISBN:", checkErr);
+      return res.status(500).send("Error checking ISBN existence.");
     }
 
     if (checkResult.length > 0) {
-      return res.status(400).send("ISBN already exists");
+      return res.status(400).send("ISBN already exists.");
     }
 
-    // Insert the book into the books table
-    const insertSql = `INSERT INTO books (title, genre, ageCategory, count, aisle, description, author, isbn, publisher, edition, monetaryValue, lastUpdatedBy, imgUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const insertSql = `
+      INSERT INTO books (title, genre, ageCategory, count, aisle, description, 
+      author, isbn, publisher, edition, monetaryValue, lastUpdatedBy, imgUrl) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
     db.query(
       insertSql,
-      [
-        title,
-        genre,
-        ageCategory,
-        count,
-        aisle,
-        description,
-        author,
-        isbn,
-        publisher,
-        edition,
-        monetaryValue,
-        lastUpdatedBy,
-        imgUrl,
-      ],
-      (err, result) => {
-        if (err) {
-          return res.status(500).send("Database Error: " + err.message);
+      [title, genre, ageCategory, count, aisle, description, author, isbn, 
+       publisher, edition, monetaryValue, lastUpdatedBy, imgUrl],
+      (insertErr, result) => {
+        if (insertErr) {
+          console.error("Error adding book:", insertErr);
+          return res.status(500).send("Database Error: " + insertErr.message);
         }
 
-        const bookId = result.insertId; // Get the ID of the newly created book
-        const insertInstanceSql = `INSERT INTO bookinstance (bookId, isMissing, checkedOutStatus) VALUES (?,?, ?)`;
+        const bookId = result.insertId;
+        const insertInstanceSql = `
+          INSERT INTO bookinstance (bookId, isMissing, checkedOutStatus) 
+          VALUES (?, ?, ?)
+        `;
 
-        // Create instances
-        const instancePromises = [];
-        for (let i = 0; i < count; i++) {
-          // Push each insert operation into an array of promises
-          instancePromises.push(
-            new Promise((resolve, reject) => {
-              db.query(insertInstanceSql, [bookId, false, false], (instanceErr, instanceResult) => {
-                if (instanceErr) {
-                  reject(instanceErr); // Reject the promise if there's an error
-                } else {
-                  resolve(instanceResult); // Resolve the promise on success
-                }
-              });
-            })
-          );
-        }
-
-        // Wait for all insert promises to complete
-        Promise.all(instancePromises)
-          .then(() => {
-            res.status(201).send("Book added successfully with instances created");
+        const instancePromises = Array.from({ length: count }, () =>
+          new Promise((resolve, reject) => {
+            db.query(insertInstanceSql, [bookId, false, false], (err, res) => {
+              if (err) reject(err);
+              else resolve(res);
+            });
           })
-          .catch((instanceErr) => {
-            res.status(500).send("Error creating book instances: " + instanceErr.message);
-          });
+        );
+
+        Promise.all(instancePromises)
+          .then(() => res.status(201).send("Book added successfully with instances created."))
+          .catch((err) => res.status(500).send("Error creating book instances: " + err.message));
       }
     );
   });
 });
 
-
-
-router.put("/updateBook=:bookId", (req, res) => {
+// Update a book and adjust instances if needed
+router.put("/updateBook/:bookId", (req, res) => {
   const { bookId } = req.params;
   const {
-    title,
-    genre,
-    ageCategory,
-    count, // New count provided in the update
-    aisle,
-    description,
-    author,
-    isbn,
-    publisher,
-    edition,
-    monetaryValue,
-    lastUpdatedBy,
-    imgUrl,
+    title, genre, ageCategory, count, aisle, description, author, isbn,
+    publisher, edition, monetaryValue, lastUpdatedBy, imgUrl,
   } = req.body;
 
-  // Step 1: Check the current count from the books table
   const getCountSql = "SELECT count FROM books WHERE bookId = ?";
   db.query(getCountSql, [bookId], (err, result) => {
     if (err) return res.status(500).send("Database Error: " + err.message);
 
-    const currentCount = result[0].count;
+    const currentCount = result[0]?.count;
 
     if (currentCount < count) {
-      // Step 2: Add new instances if count increased
       const instancesToAdd = count - currentCount;
-      const insertInstanceSql = "INSERT INTO bookinstance (bookId, checkedOutStatus) VALUES (?, ?)";
+      const insertInstanceSql = `
+        INSERT INTO bookinstance (bookId, checkedOutStatus) 
+        VALUES (?, ?)
+      `;
 
-      const promises = [];
-      for (let i = 0; i < instancesToAdd; i++) {
-        promises.push(
-          new Promise((resolve, reject) => {
-            db.query(insertInstanceSql, [bookId, false], (instanceErr, instanceResult) => {
-              if (instanceErr) reject(instanceErr);
-              else resolve(instanceResult);
-            });
-          })
-        );
-      }
+      const promises = Array.from({ length: instancesToAdd }, () =>
+        new Promise((resolve, reject) => {
+          db.query(insertInstanceSql, [bookId, false], (err, res) => {
+            if (err) reject(err);
+            else resolve(res);
+          });
+        })
+      );
 
       Promise.all(promises)
         .then(() => updateBookRecord())
         .catch((err) => res.status(500).send("Error adding instances: " + err.message));
-
     } else if (currentCount > count) {
-      // Step 3: Remove instances if count decreased
       const instancesToRemove = currentCount - count;
       const deleteInstanceSql = `
         DELETE FROM bookinstance 
         WHERE bookId = ? AND checkedOutStatus = false 
-        ORDER BY instanceId DESC LIMIT ?`;
+        ORDER BY instanceId DESC LIMIT ?
+      `;
 
       db.query(deleteInstanceSql, [bookId, instancesToRemove], (err) => {
         if (err) return res.status(500).send("Error deleting instances: " + err.message);
         updateBookRecord();
       });
     } else {
-      // If count hasn't changed, just update the book record
       updateBookRecord();
     }
 
-    // Step 4: Update the books table with new information
     function updateBookRecord() {
       const updateSql = `
         UPDATE books 
         SET title = ?, genre = ?, ageCategory = ?, count = ?, aisle = ?, 
             description = ?, author = ?, isbn = ?, publisher = ?, edition = ?, 
-            monetaryValue = ?, lastUpdatedBy = ?, imgUrl = ?
-        WHERE bookId = ?`;
+            monetaryValue = ?, lastUpdatedBy = ?, imgUrl = ? 
+        WHERE bookId = ?
+      `;
 
       db.query(
         updateSql,
-        [
-          title, genre, ageCategory, count, aisle, description, author,
-          isbn, publisher, edition, monetaryValue, lastUpdatedBy, imgUrl, bookId,
-        ],
+        [title, genre, ageCategory, count, aisle, description, author, isbn, 
+         publisher, edition, monetaryValue, lastUpdatedBy, imgUrl, bookId],
         (err) => {
           if (err) return res.status(500).send("Database Error: " + err.message);
-          res.status(200).send("Book updated successfully");
+          res.status(200).send("Book updated successfully.");
         }
       );
     }
   });
 });
 
-router.delete("/deleteBook=:id", (req, res) => {
-  const sql = "DELETE FROM books WHERE bookId = ?";
-  const id = req.params.id;
-  db.query(sql, [id], (err, result) => {
+// Delete a book and its instances
+router.delete("/deleteBook/:id", (req, res) => {
+  const { id } = req.params;
+
+  const deleteInstancesSql = "DELETE FROM bookinstance WHERE bookId = ?";
+  db.query(deleteInstancesSql, [id], (err) => {
     if (err) {
-      console.log("Error deleting book: ", err.message);
-      return res.status(500).send("Error deleting book");
+      console.error("Error deleting instances:", err.message);
+      return res.status(500).send("Error deleting book instances.");
     }
-    res.status(200).send(`Book ${id} successfully deleted`);
-  })
-})
+
+    const deleteBookSql = "DELETE FROM books WHERE bookId = ?";
+    db.query(deleteBookSql, [id], (err) => {
+      if (err) {
+        console.error("Error deleting book:", err.message);
+        return res.status(500).send("Error deleting book.");
+      }
+      res.status(200).send(`Book ${id} successfully deleted.`);
+    });
+  });
+});
 
 module.exports = router;

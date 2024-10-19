@@ -2,20 +2,19 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
 
-const moment = require("moment");
-
-//get all members
+// Get all members
 router.get("/", (req, res) => {
   const sql = "SELECT * FROM member";
   db.query(sql, (err, result) => {
     if (err) {
+      console.error("Error getting members from database:", err);
       return res.status(500).send("Error getting members from database.");
     }
-    res.json(result);
+    res.status(200).json(result);
   });
 });
 
-//add new member
+// Add new member
 router.post("/createMember", (req, res) => {
   const {
     username,
@@ -28,13 +27,11 @@ router.post("/createMember", (req, res) => {
     preferences,
   } = req.body;
 
-  const currentTime = moment();
-
-  // First, check for existing email or username
+  // Check for existing email or username
   const checkSql = "SELECT * FROM member WHERE email = ? OR username = ?";
   db.query(checkSql, [email, username], (checkErr, checkResult) => {
     if (checkErr) {
-      console.error(checkErr);
+      console.error("Error checking user existence:", checkErr);
       return res.status(500).send("Error checking user existence");
     }
 
@@ -47,8 +44,10 @@ router.post("/createMember", (req, res) => {
         return res.status(400).send("Username already in use");
       }
     }
-    const insertSql =
-      "INSERT INTO member (username, password, firstName, lastName, email, phone, DOB, preferences, createdAt, updatedAt, accountStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)";
+
+    const insertSql = `
+      INSERT INTO member (username, password, firstName, lastName, email, phone, DOB, preferences, createdAt, updatedAt, accountStatus) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)`;
 
     db.query(
       insertSql,
@@ -63,9 +62,9 @@ router.post("/createMember", (req, res) => {
         preferences,
         true,
       ],
-      (insertErr, insertResult) => {
+      (insertErr) => {
         if (insertErr) {
-          console.error(insertErr);
+          console.error("Error adding user to database:", insertErr);
           return res.status(500).send("Error adding user to database");
         }
         res.status(201).send("User added successfully");
@@ -74,8 +73,8 @@ router.post("/createMember", (req, res) => {
   });
 });
 
-//alter member
-router.put("/updateMember=:id", (req, res) => {
+// Update member
+router.put("/updateMember/:id", (req, res) => {
   const { id } = req.params;
   const {
     firstName,
@@ -94,6 +93,7 @@ router.put("/updateMember=:id", (req, res) => {
     DOB = ?, 
     preferences = ? 
     WHERE memberId = ?`;
+
   db.query(
     sql,
     [
@@ -118,14 +118,18 @@ router.put("/updateMember=:id", (req, res) => {
   );
 });
 
-//delete member from database
-router.delete("/deleteMember=:id", (req, res) => {
+// Delete member from database
+router.delete("/deleteMember/:id", (req, res) => {
   const sql = "DELETE FROM member WHERE memberId = ?";
-  const id = req.params.id;
+  const { id } = req.params;
+
   db.query(sql, [id], (err, result) => {
     if (err) {
       console.error("Error deleting member:", err);
       return res.status(500).send("Error deleting member");
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).send(`Member with ID: ${id} not found`);
     }
     res.status(200).send(`Member: ${id} successfully deleted`);
   });

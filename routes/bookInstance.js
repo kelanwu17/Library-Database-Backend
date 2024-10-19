@@ -2,17 +2,22 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
 
+// Get all book instances
 router.get("/", (req, res) => {
-    const sql = "SELECT * FROM bookinstance";
+  const sql = "SELECT * FROM bookinstance";
+
   db.query(sql, (err, result) => {
     if (err) {
-      return res
-        .status(500)
-        .send("Error getting book instances from database.");
+      console.error("Error fetching book instances:", err);
+      return res.status(500).send("Error getting book instances from database.");
     }
-    res.json(result);
+
+    if (result.length === 0) {
+      return res.status(404).send("No book instances found.");
+    }
+
+    res.status(200).json(result);
   });
 });
-
 
 module.exports = router;
