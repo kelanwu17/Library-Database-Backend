@@ -14,6 +14,18 @@ router.get("/", (req, res) => {
   });
 });
 
+router.get("/:id", (req, res) => {
+  const id = req.params.id;
+  const sql = "SELECT * FROM technology WHERE techId = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error getting technologies from database:", err.message);
+      return res.status(500).send("Error getting technologies from database.");
+    }
+    res.status(200).json(result);
+  });
+});
+
 // Create a new technology
 router.post("/createTechnology", (req, res) => {
   const {

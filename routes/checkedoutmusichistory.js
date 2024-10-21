@@ -19,6 +19,23 @@ router.get("/", (req, res) => {
   });
 });
 
+router.get("/:id", (req, res) => {
+  const id = req.params.id;
+  const sql = "SELECT * FROM checkedoutmusichistory WHERE memberId = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error fetching checked-out music:", err);
+      return res.status(500).send("Error retrieving music from the database.");
+    }
+
+    if (result.length === 0) {
+      return res.status(404).send("No checked-out music records found.");
+    }
+
+    res.status(200).json(result);
+  });
+});
+
 // Insert a new checked-out music entry
 router.post("/insertCheckOutMusic", (req, res) => {
   const { memberId, musicId, instanceId } = req.body;

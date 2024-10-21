@@ -8,7 +8,19 @@ router.get("/", (req, res) => {
   db.query(sql, (err, result) => {
     if (err) {
       console.error("Error retrieving event signups:", err);
-      return res.status(500).send("Error getting members from database.");
+      return res.status(500).json({error:"Error getting members from database."});
+    }
+    res.status(200).json(result);
+  });
+});
+
+router.get("/:id", (req, res) => {
+  const id = req.params.id;
+  const sql = "SELECT * FROM eventsignup WHERE eventId = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error retrieving event signups:", err);
+      return res.status(500).json({error:"Error getting members from database."});
     }
     res.status(200).json(result);
   });

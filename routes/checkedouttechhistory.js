@@ -19,6 +19,23 @@ router.get("/", (req, res) => {
   });
 });
 
+router.get("/:id", (req, res) => {
+  const id = req.params.id;
+  const sql = "SELECT * FROM checkedouttechhistory WHERE memberId = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error retrieving tech history:", err);
+      return res.status(500).send("Error retrieving tech items from database.");
+    }
+
+    if (result.length === 0) {
+      return res.status(404).send("No checked-out tech records found.");
+    }
+
+    res.status(200).json(result);
+  });
+});
+
 // Insert a new checked-out tech item
 router.post("/insertCheckOutTech", (req, res) => {
   const { memberId, techId, instanceId } = req.body;

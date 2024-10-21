@@ -21,10 +21,31 @@ router.get("/", (req, res) => {
   });
 });
 
+router.get("/:id", (req, res) => {
+  const memberId = req.params.id;
+  const sql = "SELECT * FROM checkedoutbookhistory WHERE memberId = ?";
+  db.query(sql, [memberId], (err, result) => {
+    if (err) {
+      console.error("Error fetching checked-out books:", err);
+      return res
+        .status(500)
+        .send("Error getting checked-out books from the database.");
+    }
+
+    if (result.length === 0) {
+      return res.status(404).send("No checked-out books found.");
+    }
+
+    res.status(200).json(result);
+  });
+});
+
 // Insert a new checked-out book entry
 router.post("/insertCheckOutBook", (req, res) => {
   const { memberId, bookId, instanceId } = req.body;
-
+  if (!memberId || !bookId || !instanceId) {
+    return res.status(400).json({ message: "Invalid request." });
+  }
   const checkSql =
     "SELECT * FROM checkedoutbookhistory WHERE memberId = ? AND bookId = ? AND instanceId = ?";
   db.query(checkSql, [memberId, bookId, instanceId], (checkErr, checkResult) => {
@@ -53,7 +74,7 @@ router.post("/insertCheckOutBook", (req, res) => {
 });
 
 // Mark a book as returned by updating the return timestamp
-router.put("/updateCheckoutBook/:id", (req, res) => {
+router.put("/updateCheckOutBook/:id", (req, res) => {
   const { id } = req.params;
 
   const sql = `

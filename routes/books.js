@@ -14,6 +14,19 @@ router.get("/", (req, res) => {
   });
 });
 
+//Get specific book
+router.get("/:id", (req,res) => {
+  const id = req.params.id;
+  const sql = "SELECT * FROM books WHERE bookId = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error getting books:", err);
+      return res.status(500).send("Error getting books from database.");
+    }
+    res.json(result);
+  });
+})
+
 // Create a new book with instances
 router.post("/createBook", (req, res) => {
   const {

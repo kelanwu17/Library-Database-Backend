@@ -7,12 +7,26 @@ router.get("/", (req, res) => {
   const sql = "SELECT * FROM member";
   db.query(sql, (err, result) => {
     if (err) {
-      console.error("Error getting members from database:", err);
-      return res.status(500).send("Error getting members from database.");
+      console.error("Error fetching members:", err);
+      return res.status(500).json({ message: "Error fetching members from database." });
     }
     res.status(200).json(result);
   });
 });
+
+//Get specific member
+router.get("/:id", (req, res) => {
+  const id = req.params.id;
+  const sql = "SELECT * FROM member WHERE memberId = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error fetching members:", err);
+      return res.status(500).json({ message: "Error fetching members from database." });
+    }
+    res.status(200).json(result);
+  });
+});
+
 
 // Add new member
 router.post("/createMember", (req, res) => {
@@ -26,22 +40,26 @@ router.post("/createMember", (req, res) => {
     DOB,
     preferences,
   } = req.body;
-
+  if (!username || !password || !email) {
+    return res
+      .status(400)
+      .json({ message: "Username, password, and email are required." });
+  }
   // Check for existing email or username
   const checkSql = "SELECT * FROM member WHERE email = ? OR username = ?";
   db.query(checkSql, [email, username], (checkErr, checkResult) => {
     if (checkErr) {
       console.error("Error checking user existence:", checkErr);
-      return res.status(500).send("Error checking user existence");
+      return res.status(500).json({ message: "Error checking user existence." });
     }
 
     if (checkResult.length > 0) {
       const existingUser = checkResult[0];
       if (existingUser.email === email) {
-        return res.status(400).send("Email already in use");
+        return res.status(400).json({ message: "Email already in use." });
       }
       if (existingUser.username === username) {
-        return res.status(400).send("Username already in use");
+        return res.status(400).json({ message: "Username already in use." });
       }
     }
 
@@ -65,9 +83,9 @@ router.post("/createMember", (req, res) => {
       (insertErr) => {
         if (insertErr) {
           console.error("Error adding user to database:", insertErr);
-          return res.status(500).send("Error adding user to database");
+          return res.status(500).json({ message: "Error adding user to database." });
         }
-        res.status(201).send("User added successfully");
+        res.status(201).json({ message: "Member added successfully." });
       }
     );
   });

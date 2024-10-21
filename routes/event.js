@@ -14,6 +14,19 @@ router.get("/", (req, res) => {
   });
 });
 
+
+router.get("/:id", (req,res) => {
+  const id = req.params.id;
+  const sql = "SELECT * FROM event WHERE eventId = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error retrieving event:", err);
+      return res.status(500).send("Error retrieving event from database.");
+    }
+    res.status(200).json(result);
+  });
+})
+
 // Create a new event
 router.post("/createEvent", (req, res) => {
   const {
@@ -29,8 +42,7 @@ router.post("/createEvent", (req, res) => {
   const checkEventTitle = "SELECT * FROM event WHERE title = ?";
   const insertSql = `
     INSERT INTO event (title, location, ageGroup, category, eventCreator, eventHolder, timeDate) 
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `;
+    VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
   // Check if the event title already exists
   db.query(checkEventTitle, [title], (checkErr, checkResult) => {
@@ -49,7 +61,6 @@ router.post("/createEvent", (req, res) => {
         console.error("Database error during event insertion:", err);
         return res.status(500).json({ error: "Database error creating event" });
       }
-
       res.status(201).json({
         message: "Event created successfully",
         eventId: result.insertId,

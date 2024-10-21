@@ -14,6 +14,18 @@ router.get("/", (req, res) => {
   });
 });
 
+router.get("/:id", (req, res) => {
+  const id = req.params.id;
+  const sql = "SELECT * FROM music WHERE musicId = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error getting music from database:", err);
+      return res.status(500).send("Error getting music from database.");
+    }
+    res.status(200).json(result);
+  });
+});
+
 // Add new music entry
 router.post("/createMusic", (req, res) => {
   const {
@@ -80,7 +92,7 @@ router.post("/createMusic", (req, res) => {
 });
 
 // Update existing music entry
-router.put("/updateMusic=:id", (req, res) => {
+router.put("/updateMusic/:id", (req, res) => {
   const { id } = req.params;
   const {
     musicGenre,
@@ -181,7 +193,7 @@ router.put("/updateMusic=:id", (req, res) => {
 });
 
 // Delete music entry
-router.delete("/deleteMusic=:id", (req, res) => {
+router.delete("/deleteMusic/:id", (req, res) => {
   const sql = "DELETE FROM music WHERE musicId = ?";
   const id = req.params.id;
 
