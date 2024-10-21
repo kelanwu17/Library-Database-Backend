@@ -27,6 +27,38 @@ router.get("/:id", (req,res) => {
   });
 })
 
+// Get books by genre
+router.get("/genre/:genre", (req,res) => {
+  const genre = req.params.genre;
+  const sql = "SELECT * FROM books WHERE genre = ?";
+  db.query(sql, [genre], (err, result) => {
+    if (err) {
+      console.error("Error getting books:", err);
+      return res.status(500).send("Error getting books from database.");
+    }
+    if (result.length === 0) {
+      return res.status(404).send(`Books not found for genre: ${genre}`)
+    }
+    res.json(result);
+  });
+});
+
+//Get book by author
+router.get("/author/:author", (req,res) => {
+  const author = req.params.author.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+  const sql = "SELECT * FROM books WHERE author = ?";
+  db.query(sql, [author], (err, result) => {
+    if (err) {
+      console.error("Error getting books:", err);
+      return res.status(500).send(`Error getting books by ${author} from database.`);
+    }
+    if (result.length === 0) {
+      return res.status(404).send(`Books not found for Author: ${author}`)
+    }
+    res.json(result);
+  });
+});
+
 // Create a new book with instances
 router.post("/createBook", (req, res) => {
   const {
