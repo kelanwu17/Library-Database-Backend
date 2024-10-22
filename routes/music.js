@@ -26,6 +26,19 @@ router.get("/:id", (req, res) => {
   });
 });
 
+//get by genre
+router.get("/genre/:genre", (req,res) => {
+  const genre = req.params.genre;
+  const sql = "SELECT * FROM music WHERE musicGenre = ?";
+  db.query(sql, [genre], (err, result) => {
+    if (err) {
+      console.error("Error getting music from database:", err);
+      return res.status(500).send("Error getting music from database.");
+    }
+    res.status(200).json(result);
+  });
+})
+
 // Add new music entry
 router.post("/createMusic", (req, res) => {
   const {
