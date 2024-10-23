@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const app = express();
+
 const port = 3001;
 
 const loginRouter = require('./auth/login');
@@ -44,6 +45,9 @@ app.use("/api/musicInstance", musicInstanceRouter);
 app.use("/api/techInstance", techInstanceRouter);
 app.use("/api/employeeLog", employeeLogRouter);
 app.use("/api/eventSignUp", eventSignUpRouter);
+
+// require('./cron/cronJobs');
+
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
