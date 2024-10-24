@@ -15,4 +15,17 @@ router.get("/", (req, res) => {
   });
 });
 
+router.get("/{id}", (req, res) => {
+  const id = req.params.id;
+  const sql = "SELECT * FROM musicinstance WHERE musicId = ?";
+  
+  db.query(sql,[id], (err, result) => {
+    if (err) {
+      console.error("Error getting music instances from database:", err);
+      return res.status(500).send("Error getting music instances from database.");
+    }
+    res.status(200).json(result);
+  });
+});
+
 module.exports = router;
