@@ -47,8 +47,8 @@ router.post("/insertCheckOutBook", (req, res) => {
     return res.status(400).json({ message: "Invalid request." });
   }
   const checkSql =
-    "SELECT * FROM checkedoutbookhistory WHERE memberId = ? AND bookId = ? AND instanceId = ?";
-  db.query(checkSql, [memberId, bookId, instanceId], (checkErr, checkResult) => {
+    "SELECT * FROM checkedoutbookhistory WHERE memberId = ? AND bookId = ? AND instanceId = ? AND timeStampReturn = ? ";
+  db.query(checkSql, [memberId, bookId, instanceId, null], (checkErr, checkResult) => {
     if (checkErr) {
       console.error("Error checking existing checkout:", checkErr);
       return res.status(500).send("Error checking existing checkout.");

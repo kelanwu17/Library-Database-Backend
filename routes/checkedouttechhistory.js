@@ -41,9 +41,9 @@ router.post("/insertCheckOutTech", (req, res) => {
   const { memberId, techId, instanceId } = req.body;
 
   const checkSql =
-    "SELECT * FROM checkedouttechhistory WHERE memberId = ? AND techId = ? AND instanceId = ?";
+    "SELECT * FROM checkedouttechhistory WHERE memberId = ? AND techId = ? AND instanceId = ? AND timeStampReturn = ?";
 
-  db.query(checkSql, [memberId, techId, instanceId], (checkErr, checkResult) => {
+  db.query(checkSql, [memberId, techId, instanceId, null], (checkErr, checkResult) => {
     if (checkErr) {
       console.error("Error checking tech item:", checkErr);
       return res.status(500).send("Error checking existing tech checkout.");

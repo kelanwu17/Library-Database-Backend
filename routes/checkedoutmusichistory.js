@@ -41,9 +41,9 @@ router.post("/insertCheckOutMusic", (req, res) => {
   const { memberId, musicId, instanceId } = req.body;
 
   const checkSql =
-    "SELECT * FROM checkedoutmusichistory WHERE memberId = ? AND musicId = ? AND instanceId = ?";
+    "SELECT * FROM checkedoutmusichistory WHERE memberId = ? AND musicId = ? AND instanceId = ? timeStampReturn = ?";
   
-  db.query(checkSql, [memberId, musicId, instanceId], (checkErr, checkResult) => {
+  db.query(checkSql, [memberId, musicId, instanceId, null], (checkErr, checkResult) => {
     if (checkErr) {
       console.error("Error checking existing checkout:", checkErr);
       return res.status(500).send("Error checking for existing checkout.");
