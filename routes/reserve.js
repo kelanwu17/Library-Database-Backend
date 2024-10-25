@@ -33,9 +33,9 @@ router.get("/:id", (req, res) => {
 router.post("/createReserve", (req, res) => {
   const { itemId, itemType, memberId } = req.body;
 
-  const checkItemIdAndType = "SELECT * FROM reserve WHERE itemId = ? AND itemType = ?";
+  const checkItemIdAndType = "SELECT * FROM reserve WHERE itemId = ? AND itemType = ? AND memberId = ? AND active = 1";
   
-  db.query(checkItemIdAndType, [itemId, itemType], (checkErr, checkResult) => {
+  db.query(checkItemIdAndType, [itemId, itemType, memberId], (checkErr, checkResult) => {
     if (checkErr) {
       console.error("Error checking itemId and itemType existence:", checkErr);
       return res.status(500).send("Error checking itemId & itemType existence");
@@ -61,42 +61,40 @@ router.post("/createReserve", (req, res) => {
 });
 
 // Uncomment this section when needed
-/*
-router.put("/updateFine=:id", (req, res) => {
-  const { id } = req.params;
-  const { fineAmount } = req.body;
-  
-  const sql = `UPDATE reserve SET fineAmount = ? WHERE finesId = ?`;
-  db.query(sql, [fineAmount, id], (err, result) => {
+
+router.put("/cancelReserve/:id", (req, res) => {
+  const id = req.params.id;
+  const sql = "UPDATE reserve SET active = 0 WHERE reserveId = ?"
+  db.query(sql,[id], (err, result) => {
     if (err) {
-      console.error("Error updating fine:", err.message);
-      return res.status(500).send("Error updating fine in database");
+      console.error("Error cancelling reserve:", err.message);
+      return res.status(500).send("Error cancelling reserve");
     }
-    if (result.affectedRows === 0) {
-      return res.status(404).send("Fine not found");
-    }
-    res.status(200).send(`Fine ID: ${id} successfully updated`);
-  });
-});
-*/
-
-// Delete a reservation
-router.delete("/deleteReserve/:id", (req, res) => {
-  const sql = "DELETE FROM reserve WHERE reserveId = ?";
-  const { id } = req.params;
-
-  db.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error("Error deleting reserve:", err.message);
-      return res.status(500).send("Error deleting reserve");
-    }
-
     if (result.affectedRows === 0) {
       return res.status(404).send(`Reserve with ID: ${id} not found`);
     }
+    res.status(200).send(`Reserve ID: ${id} cancelled successfully`);
+  })
+})
 
-    res.status(200).send(`Reserve ID: ${id} successfully deleted`);
-  });
-});
+
+// Delete a reservation
+// router.delete("/deleteReserve/:id", (req, res) => {
+//   const sql = "DELETE FROM reserve WHERE reserveId = ?";
+//   const { id } = req.params;
+
+//   db.query(sql, [id], (err, result) => {
+//     if (err) {
+//       console.error("Error deleting reserve:", err.message);
+//       return res.status(500).send("Error deleting reserve");
+//     }
+
+//     if (result.affectedRows === 0) {
+//       return res.status(404).send(`Reserve with ID: ${id} not found`);
+//     }
+
+//     res.status(200).send(`Reserve ID: ${id} successfully deleted`);
+//   });
+// });
 
 module.exports = router;
