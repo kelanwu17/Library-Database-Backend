@@ -41,7 +41,7 @@ router.post("/insertCheckOutMusic", (req, res) => {
   const { memberId, musicId, instanceId } = req.body;
 
   const checkSql =
-    "SELECT * FROM checkedoutmusichistory WHERE memberId = ? AND musicId = ? AND instanceId = ? timeStampReturn = ?";
+    "SELECT * FROM checkedoutmusichistory WHERE memberId = ? AND musicId = ? AND instanceId = ? AND timeStampReturn = ?";
   
   db.query(checkSql, [memberId, musicId, instanceId, null], (checkErr, checkResult) => {
     if (checkErr) {
