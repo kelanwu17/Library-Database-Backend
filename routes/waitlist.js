@@ -46,7 +46,7 @@ router.post("/createWaitlist", (req, res) => {
     }
 
     const insertSql = ` 
-      INSERT INTO reserve (itemId, itemType, memberId, active, waitlistTimeStamp ) 
+      INSERT INTO waitlist (itemId, itemType, memberId, active, waitlistTimeStamp ) 
       VALUES (?, ?, ?, TRUE, NOW())
     `;
 
