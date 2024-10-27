@@ -4,12 +4,12 @@ const db = require("../config/db");
 
 // Get all reservations
 router.get("/", (req, res) => {
-  const sql = "SELECT * FROM reserve";
+  const sql = "SELECT * FROM waitlist";
   
   db.query(sql, (err, result) => {
     if (err) {
-      console.error("Error getting reserves from database:", err);
-      return res.status(500).send("Error getting reserves from database.");
+      console.error("Error getting waitlists from database:", err);
+      return res.status(500).send("Error getting waitlists from database.");
     }
     res.status(200).json(result);
   });
@@ -18,19 +18,19 @@ router.get("/", (req, res) => {
 //by member Id
 router.get("/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "SELECT * FROM reserve WHERE memberId = ?";
+  const sql = "SELECT * FROM waitlist WHERE memberId = ?";
   
   db.query(sql,[id], (err, result) => {
     if (err) {
-      console.error("Error getting reserves from database:", err);
-      return res.status(500).send("Error getting reserves from database.");
+      console.error("Error getting waitlists from database:", err);
+      return res.status(500).send("Error getting waitlists from database.");
     }
     res.status(200).json(result);
   });
 });
 
 // Create a new reservation
-router.post("/createReserve", (req, res) => {
+router.post("/createWaitlist", (req, res) => {
   const { itemId, itemType, memberId } = req.body;
 
   const checkItemIdAndType = "SELECT * FROM reserve WHERE itemId = ? AND itemType = ? AND memberId = ? AND active = 1";
@@ -42,38 +42,38 @@ router.post("/createReserve", (req, res) => {
     }
 
     if (checkResult.length > 0) {
-      return res.status(400).send("Item already reserved");
+      return res.status(400).send("Item already waitlisted");
     }
 
     const insertSql = ` 
-      INSERT INTO reserve (itemId, itemType, memberId, active, reserveTimeStamp ) 
+      INSERT INTO reserve (itemId, itemType, memberId, active, waitlistTimeStamp ) 
       VALUES (?, ?, ?, TRUE, NOW())
     `;
 
     db.query(insertSql, [itemId, itemType, memberId], (err) => {
       if (err) {
-        console.error("Database Error while creating reservation:", err);
+        console.error("Database Error while waitlisting:", err);
         return res.status(500).send("Database Error: " + err.message);
       }
-      res.status(201).send("Reserved successfully");
+      res.status(201).send("Waitlisted successfully");
     });
   });
 });
 
 // Uncomment this section when needed
 
-router.put("/cancelReserve/:id", (req, res) => {
+router.put("/cancelWaitlist/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "UPDATE reserve SET active = 0 WHERE reserveId = ?"
+  const sql = "UPDATE reserve SET active = 0 WHERE waitlistId = ?"
   db.query(sql,[id], (err, result) => {
     if (err) {
-      console.error("Error cancelling reserve:", err.message);
-      return res.status(500).send("Error cancelling reserve");
+      console.error("Error cancelling waitlist:", err.message);
+      return res.status(500).send("Error cancelling waitlist");
     }
     if (result.affectedRows === 0) {
-      return res.status(404).send(`Reserve with ID: ${id} not found`);
+      return res.status(404).send(`Waitlist with ID: ${id} not found`);
     }
-    res.status(200).send(`Reserve ID: ${id} cancelled successfully`);
+    res.status(200).send(`Waitlist ID: ${id} cancelled successfully`);
   })
 })
 
