@@ -22,6 +22,7 @@ const musicInstanceRouter = require('./routes/musicInstance');
 const techInstanceRouter = require('./routes/techInstance');
 const employeeLogRouter = require('./routes/employeelog');
 const eventSignUpRouter = require('./routes/eventSignUp');
+const reserveRouter = require('./routes/reserve');
 
 app.use(express.json());
 app.use(cors());
@@ -45,6 +46,7 @@ app.use("/api/musicInstance", musicInstanceRouter);
 app.use("/api/techInstance", techInstanceRouter);
 app.use("/api/employeeLog", employeeLogRouter);
 app.use("/api/eventSignUp", eventSignUpRouter);
+app.use("/api/reserve/", reserveRouter);
 
 // require('./cron/cronJobs');
 
