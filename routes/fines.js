@@ -14,6 +14,18 @@ router.get("/", (req, res) => {
   });
 });
 
+//get specific member fine
+router.get("/:id", (req, res) => {
+  const id = req.params.id;
+  const sql = "SELECT * FROM fines WHERE memberId = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error retrieving fines:", err);
+      return res.status(500).send("Error getting fines from database.");
+    }
+    res.status(200).json(result);
+  });
+});
 
 //Pay Fine
 router.put('/payFine/:id', (req,res) => {

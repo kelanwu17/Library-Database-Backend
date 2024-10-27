@@ -48,7 +48,7 @@ app.use("/api/employeeLog", employeeLogRouter);
 app.use("/api/eventSignUp", eventSignUpRouter);
 app.use("/api/reserve/", reserveRouter);
 
-// require('./cron/cronJobs');
+require('./cron/cronJobs');
 
 
 app.listen(port, () => {
