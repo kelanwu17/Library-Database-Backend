@@ -33,7 +33,7 @@ router.get("/:id", (req, res) => {
 router.post("/createWaitlist", (req, res) => {
   const { itemId, itemType, memberId } = req.body;
 
-  const checkItemIdAndType = "SELECT * FROM reserve WHERE itemId = ? AND itemType = ? AND memberId = ? AND active = 1";
+  const checkItemIdAndType = "SELECT * FROM waitlist WHERE itemId = ? AND itemType = ? AND memberId = ? AND active = 1";
   
   db.query(checkItemIdAndType, [itemId, itemType, memberId], (checkErr, checkResult) => {
     if (checkErr) {
@@ -64,7 +64,7 @@ router.post("/createWaitlist", (req, res) => {
 
 router.put("/cancelWaitlist/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "UPDATE reserve SET active = 0 WHERE waitlistId = ?"
+  const sql = "UPDATE waitlist SET active = 0 WHERE waitlistId = ?"
   db.query(sql,[id], (err, result) => {
     if (err) {
       console.error("Error cancelling waitlist:", err.message);
