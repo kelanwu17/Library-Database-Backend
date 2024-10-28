@@ -43,7 +43,7 @@ router.post("/insertEventSignUp", (req, res) => {
     }
 
     const insertSql =
-      "INSERT INTO eventsignup (memberId, eventId, timeEnrolled, checkIn) VALUES (?, ?, NOW(), false)";
+      "INSERT INTO eventsignup (memberId, eventId, timeEnrolled, checkIn) VALUES (?, ?, NOW(), FALSE)";
     
     db.query(insertSql, [memberId, eventId], (err, result) => {
       if (err) {
@@ -56,7 +56,7 @@ router.post("/insertEventSignUp", (req, res) => {
 });
 
 // Edit an event signup by ID
-router.put("/editEventSignUp/:id", (req, res) => {
+router.put("/updateEventSignUp/:id", (req, res) => {
   const { id } = req.params;
   const { checkIn } = req.body;
   
@@ -77,7 +77,7 @@ router.put("/editEventSignUp/:id", (req, res) => {
 });
 
 // Delete an event signup by ID
-router.delete("/deleteMember/:id", (req, res) => {
+router.delete("/deleteEventSignUp/:id", (req, res) => {
   const { id } = req.params;
   const sql = "DELETE FROM eventsignup WHERE eventSignUpId = ?";
 

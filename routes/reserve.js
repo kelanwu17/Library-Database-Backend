@@ -31,7 +31,7 @@ router.get("/:id", (req, res) => {
 
 // Create a new reservation
 router.post("/createReserve", (req, res) => {
-  const { itemId, itemType, memberId, reserveDate } = req.body;
+  const { itemId, itemType, memberId } = req.body;
 
   const checkItemIdAndType = "SELECT * FROM reserve WHERE itemId = ? AND itemType = ? AND memberId = ? AND active = 1";
   
@@ -47,10 +47,10 @@ router.post("/createReserve", (req, res) => {
 
     const insertSql = ` 
       INSERT INTO reserve (itemId, itemType, memberId, instanceId, active, reserveDate ) 
-      VALUES (?, ?, ?, TRUE, ?)
+      VALUES (?, ?, ?, TRUE, NOW() + INTERVAL 7 DAY )
     `;
 
-    db.query(insertSql, [itemId, itemType, memberId, reserveDate], (err) => {
+    db.query(insertSql, [itemId, itemType, memberId], (err) => {
       if (err) {
         console.error("Database Error while reserving:", err);
         return res.status(500).send("Database Error: " + err.message);
