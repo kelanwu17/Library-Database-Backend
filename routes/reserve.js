@@ -31,11 +31,11 @@ router.get("/:id", (req, res) => {
 
 // Create a new reservation
 router.post("/createReserve", (req, res) => {
-  const { itemId, itemType, memberId } = req.body;
+  const { itemId, itemType, memberId, instanceId } = req.body;
 
-  const checkItemIdAndType = "SELECT * FROM reserve WHERE itemId = ? AND itemType = ? AND memberId = ? AND active = 1";
+  const checkItemIdAndType = "SELECT * FROM reserve WHERE itemId = ? AND itemType = ? AND memberId = ? AND instanceId AND active = 1";
   
-  db.query(checkItemIdAndType, [itemId, itemType, memberId], (checkErr, checkResult) => {
+  db.query(checkItemIdAndType, [itemId, itemType, instanceId, memberId], (checkErr, checkResult) => {
     if (checkErr) {
       console.error("Error checking itemId and itemType existence:", checkErr);
       return res.status(500).send("Error checking itemId & itemType existence");
@@ -47,10 +47,10 @@ router.post("/createReserve", (req, res) => {
 
     const insertSql = ` 
       INSERT INTO reserve (itemId, itemType, memberId, instanceId, active, reserveDate ) 
-      VALUES (?, ?, ?, TRUE, NOW() + INTERVAL 7 DAY )
+      VALUES (?, ?, ?, ?, TRUE, NOW() + INTERVAL 7 DAY)
     `;
 
-    db.query(insertSql, [itemId, itemType, memberId], (err) => {
+    db.query(insertSql, [itemId, itemType, memberId, instanceId], (err) => {
       if (err) {
         console.error("Database Error while reserving:", err);
         return res.status(500).send("Database Error: " + err.message);
