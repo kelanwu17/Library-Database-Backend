@@ -103,6 +103,8 @@ router.put("/updateMember/:id", (req, res) => {
     preferences,
   } = req.body;
 
+  const updateDOB = DOB.toISOString().slice(0, 19).replace('T', ' '); 
+
   const sql = `UPDATE member SET 
     firstName = ?, 
     lastName = ?, 
@@ -119,7 +121,7 @@ router.put("/updateMember/:id", (req, res) => {
       lastName,
       email,
       phone,
-      DOB,
+      updateDOB,
       preferences,
       id,
     ],
@@ -131,7 +133,7 @@ router.put("/updateMember/:id", (req, res) => {
       if (result.affectedRows === 0) {
         return res.status(404).send("User not found");
       }
-      res.status(200).send(`User: ${id} successfully updated`);
+      res.status(200).send(`Member: ${id} successfully updated`);
     }
   );
 });
