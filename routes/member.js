@@ -136,22 +136,36 @@ router.put("/updateMember/:id", (req, res) => {
     }
   );
 });
-
-// Delete member from database
-router.delete("/deleteMember/:id", (req, res) => {
-  const sql = "DELETE FROM member WHERE memberId = ?";
-  const { id } = req.params;
-
+router.put("/deactivateMember/:id", (req, res) => {
+  const id = req.params.id;
+  const sql = "UPDATE member SET accountStatus = 0 WHERE memberId = ?"
   db.query(sql, [id], (err, result) => {
     if (err) {
-      console.error("Error deleting member:", err);
-      return res.status(500).send("Error deleting member");
+      console.error("Error updating admin:", err);
+      return res.status(500).json({ message: "Error updating member." });
     }
     if (result.affectedRows === 0) {
-      return res.status(404).send(`Member with ID: ${id} not found`);
+      return res.status(404).json({ message: "Member not found." });
     }
-    res.status(200).send(`Member: ${id} successfully deleted`);
-  });
-});
+    res.status(200).json({ message: `Member ${id} successfully deactivated.` });
+  })
+
+})
+// Delete member from database
+// router.delete("/deleteMember/:id", (req, res) => {
+//   const sql = "DELETE FROM member WHERE memberId = ?";
+//   const { id } = req.params;
+
+//   db.query(sql, [id], (err, result) => {
+//     if (err) {
+//       console.error("Error deleting member:", err);
+//       return res.status(500).send("Error deleting member");
+//     }
+//     if (result.affectedRows === 0) {
+//       return res.status(404).send(`Member with ID: ${id} not found`);
+//     }
+//     res.status(200).send(`Member: ${id} successfully deleted`);
+//   });
+// });
 
 module.exports = router;
