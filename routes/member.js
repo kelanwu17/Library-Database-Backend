@@ -103,7 +103,6 @@ router.put("/updateMember/:id", (req, res) => {
     preferences,
   } = req.body;
 
-  const updateDOB = DOB.toISOString().slice(0, 19).replace('T', ' '); 
 
   const sql = `UPDATE member SET 
     firstName = ?, 
@@ -121,7 +120,7 @@ router.put("/updateMember/:id", (req, res) => {
       lastName,
       email,
       phone,
-      updateDOB,
+      DOB,
       preferences,
       id,
     ],
