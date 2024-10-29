@@ -186,27 +186,31 @@ router.put("/updateBook/:bookId", (req, res) => {
     }
   });
 });
+// router.put("/deactivateBook/:id", (req, res) => {
+//   const id = req.params.id;
+//   const sql = "UPDATE books SET availabilityStatus = 0"
+// })
 
 // Delete a book and its instances
-router.delete("/deleteBook/:id", (req, res) => {
-  const { id } = req.params;
+// router.delete("/deleteBook/:id", (req, res) => {
+//   const { id } = req.params;
 
-  const deleteInstancesSql = "DELETE FROM bookinstance WHERE bookId = ?";
-  db.query(deleteInstancesSql, [id], (err) => {
-    if (err) {
-      console.error("Error deleting instances:", err.message);
-      return res.status(500).send("Error deleting book instances.");
-    }
+//   const deleteInstancesSql = "DELETE FROM bookinstance WHERE bookId = ?";
+//   db.query(deleteInstancesSql, [id], (err) => {
+//     if (err) {
+//       console.error("Error deleting instances:", err.message);
+//       return res.status(500).send("Error deleting book instances.");
+//     }
 
-    const deleteBookSql = "DELETE FROM books WHERE bookId = ?";
-    db.query(deleteBookSql, [id], (err) => {
-      if (err) {
-        console.error("Error deleting book:", err.message);
-        return res.status(500).send("Error deleting book.");
-      }
-      res.status(200).send(`Book ${id} successfully deleted.`);
-    });
-  });
-});
+//     const deleteBookSql = "DELETE FROM books WHERE bookId = ?";
+//     db.query(deleteBookSql, [id], (err) => {
+//       if (err) {
+//         console.error("Error deleting book:", err.message);
+//         return res.status(500).send("Error deleting book.");
+//       }
+//       res.status(200).send(`Book ${id} successfully deleted.`);
+//     });
+//   });
+// });
 
 module.exports = router;

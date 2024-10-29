@@ -14,6 +14,19 @@ router.get("/", (req, res) => {
   });
 });
 
+//Get specific member
+router.get("/:id", (req,res)=>{
+  const id = req.params.id;
+  const sql = "SELECT * FROM librarycard WHERE memberId = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error retrieving library cards:", err);
+      return res.status(500).send("Error getting library cards from database.");
+    }
+    res.status(200).json(result);
+  });
+})
+
 // Create a new library card
 router.post("/createLibraryCard", (req, res) => {
   const { memberId } = req.body;
