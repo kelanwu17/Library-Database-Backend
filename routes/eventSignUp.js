@@ -26,6 +26,18 @@ router.get("/:id", (req, res) => {
   });
 });
 
+router.get("/member/:id", (req, res) => {
+  const id = req.params.id;
+  const sql = "SELECT * FROM eventsignup WHERE memberId = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error retrieving event signups:", err);
+      return res.status(500).json({error:"Error getting members from database."});
+    }
+    res.status(200).json(result);
+  });
+});
+
 // Insert a new event signup
 router.post("/insertEventSignUp", (req, res) => {
   const { memberId, eventId } = req.body;

@@ -25,6 +25,9 @@ router.get("/:id", (req, res) => {
     res.status(200).json(result);
   });
 });
+
+
+
 // Create a new event
 router.post("/createEvent", (req, res) => {
   const {
