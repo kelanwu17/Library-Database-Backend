@@ -32,9 +32,7 @@ router.get("/:id", (req, res) => {
         .send("Error getting checked-out books from the database.");
     }
 
-    if (result.length === 0) {
-      return res.status(404).send("No checked-out books found.");
-    }
+    
 
     res.status(200).json(result);
   });

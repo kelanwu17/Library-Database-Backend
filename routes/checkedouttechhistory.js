@@ -28,9 +28,7 @@ router.get("/:id", (req, res) => {
       return res.status(500).send("Error retrieving tech items from database.");
     }
 
-    if (result.length === 0) {
-      return res.status(404).send("No checked-out tech records found.");
-    }
+
 
     res.status(200).json(result);
   });
