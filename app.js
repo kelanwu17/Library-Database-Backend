@@ -1,8 +1,11 @@
 const express = require("express");
 const cors = require("cors");
+
+require('dotenv').config();
+
 const app = express();
 
-const port = 3001;
+const PORT = process.env.PORT || 3001;
 
 const loginRouter = require('./auth/login');
 const memberRouter = require('./routes/member');
@@ -23,6 +26,8 @@ const techInstanceRouter = require('./routes/techInstance');
 const employeeLogRouter = require('./routes/employeelog');
 const eventSignUpRouter = require('./routes/eventSignUp');
 const reserveRouter = require('./routes/reserve');
+const testRouter = require('./routes/test');
+
 
 app.use(express.json());
 app.use(cors());
@@ -47,10 +52,10 @@ app.use("/api/techInstance", techInstanceRouter);
 app.use("/api/employeeLog", employeeLogRouter);
 app.use("/api/eventSignUp", eventSignUpRouter);
 app.use("/api/reserve/", reserveRouter);
-
+app.use("/test", testRouter);
 require('./cron/cronJobs');
 
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });

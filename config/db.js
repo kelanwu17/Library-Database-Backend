@@ -1,13 +1,13 @@
 const mysql = require("mysql2");
 
 const db = mysql.createConnection({
-  host: "librarydatabase.mysql.database.azure.com",
-  user: "admin3380",
-  password: "Password!",
-  database: "library",
-  port: 3306,
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
   ssl: {
-    rejectUnauthorized: true,
+    rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true',
   },
 });
 

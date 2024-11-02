@@ -17,6 +17,7 @@ router.get("/", (req, res) => {
 router.get("/:id", (req, res) => {
   const id = req.params.id;
   const sql = "SELECT * FROM eventsignup WHERE eventId = ?";
+
   db.query(sql, [id], (err, result) => {
     if (err) {
       console.error("Error retrieving event signups:", err);
@@ -28,15 +29,46 @@ router.get("/:id", (req, res) => {
 
 router.get("/member/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "SELECT * FROM eventsignup WHERE memberId = ?";
-  db.query(sql, [id], (err, result) => {
+  const signupSql = "SELECT * FROM eventsignup WHERE memberId = ?";
+
+  db.query(signupSql, [id], (err, signups) => {
     if (err) {
       console.error("Error retrieving event signups:", err);
-      return res.status(500).json({error:"Error getting members from database."});
+      return res.status(500).json({ error: "Error getting signups from database." });
     }
-    res.status(200).json(result);
+
+    // If there are no signups, respond with an empty array
+    if (signups.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    // Process each signup to retrieve event names
+    const eventPromises = signups.map((signup) => {
+      const eventNameSql = "SELECT title FROM event WHERE eventId = ?";
+      return new Promise((resolve, reject) => {
+        db.query(eventNameSql, [signup.eventId], (err2, eventResult) => {
+          if (err2) {
+            console.error("Error retrieving event name:", err2);
+            return reject("Error getting event names from database.");
+          }
+          // Add the event title to the signup object
+          signup.eventTitle = eventResult[0]?.title || "Unknown Event";
+          resolve(signup);
+        });
+      });
+    });
+
+    // Wait for all event title queries to complete
+    Promise.all(eventPromises)
+      .then((results) => {
+        res.status(200).json(results);
+      })
+      .catch((error) => {
+        res.status(500).json({ error });
+      });
   });
 });
+
 
 // Insert a new event signup
 router.post("/insertEventSignUp", (req, res) => {
