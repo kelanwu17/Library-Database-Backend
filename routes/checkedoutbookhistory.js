@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
+const { checkedOutMail } = require("../mailer/mailer");
+
+
 
 // Get all checked-out books
 router.get("/", (req, res) => {
@@ -66,7 +69,7 @@ router.post("/insertCheckOutBook", (req, res) => {
         console.error("Error adding checked-out book:", err);
         return res.status(500).send("Error adding checked-out book.");
       }
-      res.status(201).send("Book checked out successfully.");
+           res.status(201).send("Book checked out successfully.");
     });
   });
 });

@@ -44,7 +44,7 @@ router.get("/member/:id", (req, res) => {
 
     // Process each signup to retrieve event names
     const eventPromises = signups.map((signup) => {
-      const eventNameSql = "SELECT title FROM event WHERE eventId = ?";
+      const eventNameSql = "SELECT title,location, timeDate FROM event WHERE eventId = ?";
       return new Promise((resolve, reject) => {
         db.query(eventNameSql, [signup.eventId], (err2, eventResult) => {
           if (err2) {
@@ -53,6 +53,8 @@ router.get("/member/:id", (req, res) => {
           }
           // Add the event title to the signup object
           signup.eventTitle = eventResult[0]?.title || "Unknown Event";
+          signup.location = eventResult[0]?.location || "Unknown Location";
+          signup.timeDate = eventResult[0]?.timeDate || "Unknown DateTime";
           resolve(signup);
         });
       });

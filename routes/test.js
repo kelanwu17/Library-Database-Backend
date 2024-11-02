@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const {sendWelcomeMail, checkedOutMail} = require("../mailer/mailer");
+const {sendWelcomeMail, checkedOutMail, reserveMail, waitlistMail} = require("../mailer/mailer");
 
 const db = require("../config/db");
 
@@ -49,5 +49,31 @@ router.post("/checkout", async (req, res) => {
     console.error("Error sending email:", error);
     res.status(500).send("Error sending email");
   }
+});
+
+router.post("/waitlist", async (req, res) => {
+  const {to, itemId} = req.body;
+try {
+  const itemName = await getItemName(itemId);
+  console.log(itemName);
+  checkedOutMail(to, itemName);
+  res.status(200).send("Email sent successfully!");
+} catch (error) {
+  console.error("Error sending email:", error);
+  res.status(500).send("Error sending email");
+}
+});
+
+router.post("/reserve", async (req, res) => {
+  const {to, itemId} = req.body;
+try {
+  const itemName = await getItemName(itemId);
+  console.log(itemName);
+  checkedOutMail(to, itemName);
+  res.status(200).send("Email sent successfully!");
+} catch (error) {
+  console.error("Error sending email:", error);
+  res.status(500).send("Error sending email");
+}
 });
 module.exports = router;
