@@ -20,17 +20,36 @@ router.get("/", (req, res) => {
 });
 
 router.get("/:id", (req, res) => {
-  const id = req.params.id;
+  const memberId = req.params.id;
   const sql = "SELECT * FROM checkedoutmusichistory WHERE memberId = ?";
-  db.query(sql, [id], (err, result) => {
+  db.query(sql, [memberId], (err, result) => {
     if (err) {
       console.error("Error fetching checked-out music:", err);
-      return res.status(500).send("Error retrieving music from the database.");
+      return res
+        .status(500)
+        .send("Error getting checked-out music from the database.");
     }
+    const musicPromise = result.map((music) => {
+      const albumNameSql = "SELECT albumName FROM music WHERE musicId = ?";
+      return new Promise((resolve, reject) => {
+        db.query(albumNameSql, [music.musicId], (err2, musicResult) => {
+          if (err2) {
+            console.error("Error retrieving music name:", err2);
+            return reject("Error getting album name from db");
+          }
+          music.musicId = musicResult[0]?.albumName || "Unknown Title";
+          resolve(music);
+        });
+      });
+    });
 
-
-
-    res.status(200).json(result);
+    Promise.all(musicPromise)
+      .then((results) => {
+        res.status(200).json(results);
+      })
+      .catch((error) => {
+        res.status(500).json({ error });
+      });
   });
 });
 

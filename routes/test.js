@@ -7,7 +7,7 @@ const db = require("../config/db");
 function getItemName(type, itemId) {
     let sql = "";
     if (type === "book") {
-        sql = "SELECT title FROM books WHERE bookId = ?"
+        sql = "SELECT * FROM books WHERE bookId = ?"
     } else if (type === "music") {
         sql = "SELECT albumName FROM music WHERE musicId = ?"
     } else if (type === "tech") {
@@ -41,7 +41,7 @@ router.post("/", async (req, res) => {
 router.post("/checkout", async (req, res) => {
     const {to, itemId} = req.body;
   try {
-    const itemName = await getItemName(itemId);
+    const itemName = await getItemName("book",itemId);
     console.log(itemName);
     checkedOutMail(to, itemName);
     res.status(200).send("Email sent successfully!");
@@ -54,9 +54,9 @@ router.post("/checkout", async (req, res) => {
 router.post("/waitlist", async (req, res) => {
   const {to, itemId} = req.body;
 try {
-  const itemName = await getItemName(itemId);
+  const itemName = await getItemName("book",itemId);
   console.log(itemName);
-  checkedOutMail(to, itemName);
+  waitlistMail(to, itemName);
   res.status(200).send("Email sent successfully!");
 } catch (error) {
   console.error("Error sending email:", error);
@@ -69,7 +69,7 @@ router.post("/reserve", async (req, res) => {
 try {
   const itemName = await getItemName(itemId);
   console.log(itemName);
-  checkedOutMail(to, itemName);
+  reserveMail(to, itemName);
   res.status(200).send("Email sent successfully!");
 } catch (error) {
   console.error("Error sending email:", error);

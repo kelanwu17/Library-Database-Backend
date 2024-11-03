@@ -20,17 +20,36 @@ router.get("/", (req, res) => {
 });
 
 router.get("/:id", (req, res) => {
-  const id = req.params.id;
+  const memberId = req.params.id;
   const sql = "SELECT * FROM checkedouttechhistory WHERE memberId = ?";
-  db.query(sql, [id], (err, result) => {
+  db.query(sql, [memberId], (err, result) => {
     if (err) {
-      console.error("Error retrieving tech history:", err);
-      return res.status(500).send("Error retrieving tech items from database.");
+      console.error("Error fetching checked-out tech:", err);
+      return res
+        .status(500)
+        .send("Error getting checked-out tech from the database.");
     }
+    const techPromise = result.map((tech) => {
+      const deviceNameSql = "SELECT deviceName FROM technology WHERE techId = ?";
+      return new Promise((resolve, reject) => {
+        db.query(deviceNameSql, [tech.techId], (err2, techResult) => {
+          if (err2) {
+            console.error("Error retrieving device name:", err2);
+            return reject("Error getting device name from db");
+          }
+          tech.techId = techResult[0]?.deviceName || "Unknown Title";
+          resolve(tech);
+        });
+      });
+    });
 
-
-
-    res.status(200).json(result);
+    Promise.all(techPromise)
+      .then((results) => {
+        res.status(200).json(results);
+      })
+      .catch((error) => {
+        res.status(500).json({ error });
+      });
   });
 });
 
