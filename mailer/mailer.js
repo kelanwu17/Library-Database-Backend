@@ -41,4 +41,34 @@ const checkedOutMail = (to, itemName) => {
   return transporter.sendMail(mailOptions);
 }
 
-module.exports = {sendWelcomeMail, checkedOutMail};
+const reserveMail = (to, itemName) => {
+  const mailOptions = {
+    from: process.env.EMAIL,
+    to,
+    subject: "Reserved successfully",
+    text: "Reserved item: " + itemName + "!",
+    html: `
+    
+    <p>Hello, you've reserved ${itemName} </p>
+
+    `,
+  };
+  return transporter.sendMail(mailOptions);
+}
+
+const waitlistMail = (to, itemName) => {
+  const mailOptions = {
+    from: process.env.EMAIL,
+    to,
+    subject: "Waitlisted successfully",
+    text: "Waitlisted item: " + itemName + "!",
+    html: `
+    
+    <p>Hello, you've waitlisted ${itemName} </p>
+
+    `,
+  };
+  return transporter.sendMail(mailOptions);
+}
+
+module.exports = {sendWelcomeMail, checkedOutMail, reserveMail, waitlistMail};

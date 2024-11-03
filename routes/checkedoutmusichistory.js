@@ -37,7 +37,7 @@ router.get("/:id", (req, res) => {
             console.error("Error retrieving music name:", err2);
             return reject("Error getting album name from db");
           }
-          music.musicId = musicResult[0]?.albumName || "Unknown Title";
+          music.albumName = musicResult[0]?.albumName || "Unknown Title";
           resolve(music);
         });
       });

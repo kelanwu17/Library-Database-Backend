@@ -37,7 +37,7 @@ router.get("/:id", (req, res) => {
             console.error("Error retrieving device name:", err2);
             return reject("Error getting device name from db");
           }
-          tech.techId = techResult[0]?.deviceName || "Unknown Title";
+          tech.deviceName = techResult[0]?.deviceName || "Unknown Title";
           resolve(tech);
         });
       });

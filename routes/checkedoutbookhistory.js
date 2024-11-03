@@ -40,7 +40,7 @@ router.get("/:id", (req, res) => {
             console.error("Error retrieving book name:", err2);
             return reject("Error getting book names from db");
           }
-          book.bookId = bookResult[0]?.title || "Unknown Title";
+          book.bookTitle = bookResult[0]?.title || "Unknown Title";
           resolve(book);
         });
       });
