@@ -2,15 +2,15 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
 
-
-
 // Get all members
 router.get("/", (req, res) => {
   const sql = "SELECT * FROM member";
   db.query(sql, (err, result) => {
     if (err) {
       console.error("Error fetching members:", err);
-      return res.status(500).json({ message: "Error fetching members from database." });
+      return res
+        .status(500)
+        .json({ message: "Error fetching members from database." });
     }
     res.status(200).json(result);
   });
@@ -23,12 +23,13 @@ router.get("/:id", (req, res) => {
   db.query(sql, [id], (err, result) => {
     if (err) {
       console.error("Error fetching members:", err);
-      return res.status(500).json({ message: "Error fetching members from database." });
+      return res
+        .status(500)
+        .json({ message: "Error fetching members from database." });
     }
     res.status(200).json(result);
   });
 });
-
 
 // Add new member
 router.post("/createMember", (req, res) => {
@@ -52,7 +53,9 @@ router.post("/createMember", (req, res) => {
   db.query(checkSql, [email, username], (checkErr, checkResult) => {
     if (checkErr) {
       console.error("Error checking user existence:", checkErr);
-      return res.status(500).json({ message: "Error checking user existence." });
+      return res
+        .status(500)
+        .json({ message: "Error checking user existence." });
     }
 
     if (checkResult.length > 0) {
@@ -85,10 +88,11 @@ router.post("/createMember", (req, res) => {
       (insertErr) => {
         if (insertErr) {
           console.error("Error adding user to database:", insertErr);
-          return res.status(500).json({ message: "Error adding user to database." });
+          return res
+            .status(500)
+            .json({ message: "Error adding user to database." });
         }
         res.status(201).json({ message: "Member added successfully." });
-
       }
     );
   });
@@ -97,15 +101,7 @@ router.post("/createMember", (req, res) => {
 // Update member
 router.put("/updateMember/:id", (req, res) => {
   const { id } = req.params;
-  const {
-    firstName,
-    lastName,
-    email,
-    phone,
-    DOB,
-    preferences,
-  } = req.body;
-
+  const { firstName, lastName, email, phone, DOB, preferences } = req.body;
 
   const sql = `UPDATE member SET 
     firstName = ?, 
@@ -118,15 +114,7 @@ router.put("/updateMember/:id", (req, res) => {
 
   db.query(
     sql,
-    [
-      firstName,
-      lastName,
-      email,
-      phone,
-      DOB,
-      preferences,
-      id,
-    ],
+    [firstName, lastName, email, phone, DOB, preferences, id],
     (err, result) => {
       if (err) {
         console.error("Error updating user:", err);
@@ -139,9 +127,37 @@ router.put("/updateMember/:id", (req, res) => {
     }
   );
 });
+
+//update member preferences
+router.put("/updateMemberPref/:id", (req, res) => {
+  const { id } = req.params;
+  const { preferences } = req.body;
+
+  const sql = `UPDATE member SET 
+    preferences = ? 
+    WHERE memberId = ?`;
+
+  db.query(
+    sql,
+    [preferences, id],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating user preferences:", err);
+        return res.status(500).send("Error updating user preferences in database");
+      }
+      if (result.affectedRows === 0) {
+        return res.status(404).send("User not found");
+      }
+      res.status(200).send(`Member: ${id} preferences successfully updated`);
+    }
+  );
+});
+
+
+
 router.put("/deactivateMember/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "UPDATE member SET accountStatus = 0 WHERE memberId = ?"
+  const sql = "UPDATE member SET accountStatus = 0 WHERE memberId = ?";
   db.query(sql, [id], (err, result) => {
     if (err) {
       console.error("Error updating admin:", err);
@@ -151,9 +167,8 @@ router.put("/deactivateMember/:id", (req, res) => {
       return res.status(404).json({ message: "Member not found." });
     }
     res.status(200).json({ message: `Member ${id} successfully deactivated.` });
-  })
-
-})
+  });
+});
 // Delete member from database
 // router.delete("/deleteMember/:id", (req, res) => {
 //   const sql = "DELETE FROM member WHERE memberId = ?";
