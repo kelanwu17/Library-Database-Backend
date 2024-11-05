@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
-
+const {sendWelcomeMail} = require("../mailer/mailer");
 // Get all members
 router.get("/", (req, res) => {
   const sql = "SELECT * FROM member";
@@ -85,14 +85,21 @@ router.post("/createMember", (req, res) => {
         preferences,
         true,
       ],
-      (insertErr) => {
+      async (insertErr) => {
         if (insertErr) {
           console.error("Error adding user to database:", insertErr);
           return res
             .status(500)
             .json({ message: "Error adding user to database." });
         }
-        res.status(201).json({ message: "Member added successfully." });
+        let to = email;
+        try {
+          await sendWelcomeMail(to, firstName, username, password);
+          res.status(201).send("Member created and Email sent successfully!");
+        } catch (insertErr) {
+          console.error("Error sending email:", insertErr);
+          res.status(201).send("Member created but Error sending email");
+        }
       }
     );
   });
