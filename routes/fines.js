@@ -30,7 +30,7 @@ router.get("/:id", (req, res) => {
 //Pay Fine
 router.put('/payFine/:id', (req,res) => {
   const id = req.params.id;
-  const sql = "UPDATE fines SET paid = TRUE WHERE finesId = ?";
+  const sql = "UPDATE fines SET paid = TRUE WHERE memberId = ?";
   db.query(sql, [id], (err, result) => {
     if (err) {
       console.error("Error updating fine:", err.message);
@@ -39,7 +39,7 @@ router.put('/payFine/:id', (req,res) => {
     if (result.affectedRows === 0) {
             return res.status(404).send("Fine not found");
     }
-    res.status(200).send(`Fine ID: ${id} payed`);
+    res.status(200).send(`Member ID: ${id} fines payed`);
   })
 })
 
