@@ -199,21 +199,33 @@ function adjustTechnologyInstances(techId, currentCount, newCount, res) {
   }
 }
 
-// Delete a technology
-router.delete("/deleteTechnology/:id", (req, res) => {
-  const sql = "DELETE FROM technology WHERE techId = ?";
+router.put("/deactivateTech/:id", (req, res) => {
   const id = req.params.id;
-
-  db.query(sql, [id], (err, result) => {
+  const sql = "UPDATE technology SET availabilityStatus = 0";
+  db.query(sql, [id], (err) => {
     if (err) {
-      console.error("Error deleting technology: ", err.message);
-      return res.status(500).send("Error deleting technology");
+      console.error("Error deleting tech:", err.message);
+      return res.status(500).send("Error deleting tech.");
     }
-    if (result.affectedRows === 0) {
-      return res.status(404).send(`Technology with ID: ${id} not found`);
-    }
-    res.status(200).send(`Technology ${id} successfully deleted`);
+    res.status(200).send("Tech deactivated");
   });
 });
+
+// Delete a technology
+// router.delete("/deleteTechnology/:id", (req, res) => {
+//   const sql = "DELETE FROM technology WHERE techId = ?";
+//   const id = req.params.id;
+
+//   db.query(sql, [id], (err, result) => {
+//     if (err) {
+//       console.error("Error deleting technology: ", err.message);
+//       return res.status(500).send("Error deleting technology");
+//     }
+//     if (result.affectedRows === 0) {
+//       return res.status(404).send(`Technology with ID: ${id} not found`);
+//     }
+//     res.status(200).send(`Technology ${id} successfully deleted`);
+//   });
+// });
 
 module.exports = router;

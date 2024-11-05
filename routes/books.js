@@ -15,7 +15,7 @@ router.get("/", (req, res) => {
 });
 
 //Get specific book
-router.get("/:id", (req,res) => {
+router.get("/:id", (req, res) => {
   const id = req.params.id;
   const sql = "SELECT * FROM books WHERE bookId = ?";
   db.query(sql, [id], (err, result) => {
@@ -25,10 +25,10 @@ router.get("/:id", (req,res) => {
     }
     res.json(result);
   });
-})
+});
 
 // Get books by genre
-router.get("/genre/:genre", (req,res) => {
+router.get("/genre/:genre", (req, res) => {
   const genre = req.params.genre;
   const sql = "SELECT * FROM books WHERE genre = ?";
   db.query(sql, [genre], (err, result) => {
@@ -37,23 +37,28 @@ router.get("/genre/:genre", (req,res) => {
       return res.status(500).send("Error getting books from database.");
     }
     if (result.length === 0) {
-      return res.status(404).send(`Books not found for genre: ${genre}`)
+      return res.status(404).send(`Books not found for genre: ${genre}`);
     }
     res.json(result);
   });
 });
 
 //Get book by author
-router.get("/author/:author", (req,res) => {
-  const author = req.params.author.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+router.get("/author/:author", (req, res) => {
+  const author = req.params.author
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
   const sql = "SELECT * FROM books WHERE author = ?";
   db.query(sql, [author], (err, result) => {
     if (err) {
       console.error("Error getting books:", err);
-      return res.status(500).send(`Error getting books by ${author} from database.`);
+      return res
+        .status(500)
+        .send(`Error getting books by ${author} from database.`);
     }
     if (result.length === 0) {
-      return res.status(404).send(`Books not found for Author: ${author}`)
+      return res.status(404).send(`Books not found for Author: ${author}`);
     }
     res.json(result);
   });
@@ -62,8 +67,19 @@ router.get("/author/:author", (req,res) => {
 // Create a new book with instances
 router.post("/createBook", (req, res) => {
   const {
-    title, genre, ageCategory, count, aisle, description, author, isbn,
-    publisher, edition, monetaryValue, lastUpdatedBy, imgUrl,
+    title,
+    genre,
+    ageCategory,
+    count,
+    aisle,
+    description,
+    author,
+    isbn,
+    publisher,
+    edition,
+    monetaryValue,
+    lastUpdatedBy,
+    imgUrl,
   } = req.body;
 
   const checkIsbnSql = "SELECT * FROM books WHERE isbn = ?";
@@ -85,8 +101,21 @@ router.post("/createBook", (req, res) => {
 
     db.query(
       insertSql,
-      [title, genre, ageCategory, count, aisle, description, author, isbn, 
-       publisher, edition, monetaryValue, lastUpdatedBy, imgUrl],
+      [
+        title,
+        genre,
+        ageCategory,
+        count,
+        aisle,
+        description,
+        author,
+        isbn,
+        publisher,
+        edition,
+        monetaryValue,
+        lastUpdatedBy,
+        imgUrl,
+      ],
       (insertErr, result) => {
         if (insertErr) {
           console.error("Error adding book:", insertErr);
@@ -99,18 +128,32 @@ router.post("/createBook", (req, res) => {
           VALUES (?, ?, ?)
         `;
 
-        const instancePromises = Array.from({ length: count }, () =>
-          new Promise((resolve, reject) => {
-            db.query(insertInstanceSql, [bookId, false, false], (err, res) => {
-              if (err) reject(err);
-              else resolve(res);
-            });
-          })
+        const instancePromises = Array.from(
+          { length: count },
+          () =>
+            new Promise((resolve, reject) => {
+              db.query(
+                insertInstanceSql,
+                [bookId, false, false],
+                (err, res) => {
+                  if (err) reject(err);
+                  else resolve(res);
+                }
+              );
+            })
         );
 
         Promise.all(instancePromises)
-          .then(() => res.status(201).send("Book added successfully with instances created."))
-          .catch((err) => res.status(500).send("Error creating book instances: " + err.message));
+          .then(() =>
+            res
+              .status(201)
+              .send("Book added successfully with instances created.")
+          )
+          .catch((err) =>
+            res
+              .status(500)
+              .send("Error creating book instances: " + err.message)
+          );
       }
     );
   });
@@ -120,8 +163,19 @@ router.post("/createBook", (req, res) => {
 router.put("/updateBook/:bookId", (req, res) => {
   const { bookId } = req.params;
   const {
-    title, genre, ageCategory, count, aisle, description, author, isbn,
-    publisher, edition, monetaryValue, lastUpdatedBy, imgUrl,
+    title,
+    genre,
+    ageCategory,
+    count,
+    aisle,
+    description,
+    author,
+    isbn,
+    publisher,
+    edition,
+    monetaryValue,
+    lastUpdatedBy,
+    imgUrl,
   } = req.body;
 
   const getCountSql = "SELECT count FROM books WHERE bookId = ?";
@@ -137,18 +191,22 @@ router.put("/updateBook/:bookId", (req, res) => {
         VALUES (?, ?)
       `;
 
-      const promises = Array.from({ length: instancesToAdd }, () =>
-        new Promise((resolve, reject) => {
-          db.query(insertInstanceSql, [bookId, false], (err, res) => {
-            if (err) reject(err);
-            else resolve(res);
-          });
-        })
+      const promises = Array.from(
+        { length: instancesToAdd },
+        () =>
+          new Promise((resolve, reject) => {
+            db.query(insertInstanceSql, [bookId, false], (err, res) => {
+              if (err) reject(err);
+              else resolve(res);
+            });
+          })
       );
 
       Promise.all(promises)
         .then(() => updateBookRecord())
-        .catch((err) => res.status(500).send("Error adding instances: " + err.message));
+        .catch((err) =>
+          res.status(500).send("Error adding instances: " + err.message)
+        );
     } else if (currentCount > count) {
       const instancesToRemove = currentCount - count;
       const deleteInstanceSql = `
@@ -158,7 +216,10 @@ router.put("/updateBook/:bookId", (req, res) => {
       `;
 
       db.query(deleteInstanceSql, [bookId, instancesToRemove], (err) => {
-        if (err) return res.status(500).send("Error deleting instances: " + err.message);
+        if (err)
+          return res
+            .status(500)
+            .send("Error deleting instances: " + err.message);
         updateBookRecord();
       });
     } else {
@@ -176,20 +237,43 @@ router.put("/updateBook/:bookId", (req, res) => {
 
       db.query(
         updateSql,
-        [title, genre, ageCategory, count, aisle, description, author, isbn, 
-         publisher, edition, monetaryValue, lastUpdatedBy, imgUrl, bookId],
+        [
+          title,
+          genre,
+          ageCategory,
+          count,
+          aisle,
+          description,
+          author,
+          isbn,
+          publisher,
+          edition,
+          monetaryValue,
+          lastUpdatedBy,
+          imgUrl,
+          bookId,
+        ],
         (err) => {
-          if (err) return res.status(500).send("Database Error: " + err.message);
+          if (err)
+            return res.status(500).send("Database Error: " + err.message);
           res.status(200).send("Book updated successfully.");
         }
       );
     }
   });
 });
-// router.put("/deactivateBook/:id", (req, res) => {
-//   const id = req.params.id;
-//   const sql = "UPDATE books SET availabilityStatus = 0"
-// })
+
+router.put("/deactivateBook/:id", (req, res) => {
+  const id = req.params.id;
+  const sql = "UPDATE books SET availabilityStatus = 0";
+  db.query(sql, [id], (err) => {
+    if (err) {
+      console.error("Error deleting book:", err.message);
+      return res.status(500).send("Error deleting book .");
+    }
+    res.status(200).send("Book deactivated");
+  });
+});
 
 // Delete a book and its instances
 // router.delete("/deleteBook/:id", (req, res) => {

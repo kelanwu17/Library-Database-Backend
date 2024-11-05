@@ -205,21 +205,33 @@ router.put("/updateMusic/:id", (req, res) => {
   });
 });
 
-// Delete music entry
-router.delete("/deleteMusic/:id", (req, res) => {
-  const sql = "DELETE FROM music WHERE musicId = ?";
+router.put("/deactivateMusic/:id", (req, res) => {
   const id = req.params.id;
-
-  db.query(sql, [id], (err, result) => {
+  const sql = "UPDATE music SET availabilityStatus = 0";
+  db.query(sql, [id], (err) => {
     if (err) {
       console.error("Error deleting music:", err.message);
-      return res.status(500).send("Error deleting music");
+      return res.status(500).send("Error deleting music.");
     }
-    if (result.affectedRows === 0) {
-      return res.status(404).send("Music not found");
-    }
-    res.status(200).send(`Music ${id} successfully deleted`);
+    res.status(200).send("Music deactivated");
   });
 });
+
+// Delete music entry
+// router.delete("/deleteMusic/:id", (req, res) => {
+//   const sql = "DELETE FROM music WHERE musicId = ?";
+//   const id = req.params.id;
+
+//   db.query(sql, [id], (err, result) => {
+//     if (err) {
+//       console.error("Error deleting music:", err.message);
+//       return res.status(500).send("Error deleting music");
+//     }
+//     if (result.affectedRows === 0) {
+//       return res.status(404).send("Music not found");
+//     }
+//     res.status(200).send(`Music ${id} successfully deleted`);
+//   });
+// });
 
 module.exports = router;
