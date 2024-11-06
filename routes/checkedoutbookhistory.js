@@ -58,16 +58,27 @@ router.get("/:id", (req, res) => {
 
 // Insert a new checked-out book entry
 router.post("/insertCheckOutBook", (req, res) => {
-  const { memberId, bookId, instanceId } = req.body;
+  const { memberId, bookId, instanceId, role } = req.body;
   if (!memberId || !bookId || !instanceId) {
     return res.status(400).json({ message: "Invalid request." });
   }
-  const checkSql =
-    "SELECT * FROM checkedoutbookhistory WHERE memberId = ? AND bookId = ? AND instanceId = ? AND timeStampReturn = ? ";
-  db.query(
-    checkSql,
-    [memberId, bookId, instanceId, null],
-    (checkErr, checkResult) => {
+
+  const limitSql = "SELECT * FROM checkedoutbookhistory WHERE memberId = ? AND timeStampReturn IS NULL";
+  db.query(limitSql, [memberId], (limitErr, limitRes) => {
+    if (limitErr) {
+      console.error("Error checking existing checkout:", limitErr);
+      return res.status(500).send("Error checking existing checkout.");
+    }
+
+    if (role === "student" && limitRes.length > 1) {
+      return res.status(400).send("Limit Exceeded");
+    } else if (role === "faculty" && limitRes.length > 2) {
+      return res.status(400).send("Limit Exceeded");
+    }
+
+    const checkSql =
+      "SELECT * FROM checkedoutbookhistory WHERE memberId = ? AND bookId = ? AND instanceId = ? AND timeStampReturn IS NULL";
+    db.query(checkSql, [memberId, bookId, instanceId], (checkErr, checkResult) => {
       if (checkErr) {
         console.error("Error checking existing checkout:", checkErr);
         return res.status(500).send("Error checking existing checkout.");
@@ -78,9 +89,9 @@ router.post("/insertCheckOutBook", (req, res) => {
       }
 
       const insertSql = `
-      INSERT INTO checkedoutbookhistory 
-      (memberId, bookId, instanceId, timeStampDue, timeStampCheckedOut) 
-      VALUES (?, ?, ?, NOW() + INTERVAL 2 WEEK, NOW())`;
+        INSERT INTO checkedoutbookhistory 
+        (memberId, bookId, instanceId, timeStampDue, timeStampCheckedOut) 
+        VALUES (?, ?, ?, NOW() + INTERVAL 2 WEEK, NOW())`;
 
       db.query(insertSql, [memberId, bookId, instanceId], (err) => {
         if (err) {
@@ -89,9 +100,10 @@ router.post("/insertCheckOutBook", (req, res) => {
         }
         res.status(201).send("Book checked out successfully.");
       });
-    }
-  );
+    });
+  });
 });
+
 
 // Mark a book as returned by updating the return timestamp
 router.put("/updateCheckOutBook/:id", (req, res) => {
