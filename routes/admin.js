@@ -31,7 +31,7 @@ router.get("/:id", (req, res) => {
 
 // Add new admin
 router.post("/createAdmin", async (req, res) => {
-  const { username, password, firstName, lastName, email, phone, DOB, roles } =
+  const { username, password, firstName, lastName, email, phone, DOB, roles, createdBy } =
     req.body;
 
   if (!username || !password || !email) {
@@ -56,12 +56,12 @@ router.post("/createAdmin", async (req, res) => {
     }
 
     const insertSql = `
-        INSERT INTO admin (username, password, firstName, lastName, email, phone, DOB, roles, active)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO admin (username, password, firstName, lastName, email, phone, DOB, roles, active, createdBy)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
     db.query(
       insertSql,
-      [username, password, firstName, lastName, email, phone, DOB, roles, true],
+      [username, password, firstName, lastName, email, phone, DOB, roles, true, createdBy],
       (insertErr) => {
         if (insertErr) {
           console.error("Error adding admin:", insertErr);

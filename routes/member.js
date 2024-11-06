@@ -43,6 +43,7 @@ router.post("/createMember", (req, res) => {
     DOB,
     role,
     preferences,
+    createdBy,
   } = req.body;
   if (!username || !password || !email) {
     return res
@@ -70,8 +71,8 @@ router.post("/createMember", (req, res) => {
     }
 
     const insertSql = `
-      INSERT INTO member (username, password, firstName, lastName, email, phone, DOB, preferences, createdAt, updatedAt, role, accountStatus) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(),?, ?)`;
+      INSERT INTO member (username, password, firstName, lastName, email, phone, DOB, preferences, createdAt, updatedAt, role, accountStatus, createdBy) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(),?, ?, ?)`;
 
     db.query(
       insertSql,
@@ -86,6 +87,7 @@ router.post("/createMember", (req, res) => {
         preferences,
         role,
         true,
+        createdBy,
       ],
       async (insertErr) => {
         if (insertErr) {
