@@ -4,7 +4,29 @@ const db = require("../config/db");
 
 // Get all fines
 router.get("/", (req, res) => {
-  const sql = "SELECT * FROM fines";
+  const sql = `
+    SELECT 
+      Fines.*,
+      Member.firstName,
+      Member.lastName,
+      CASE 
+        WHEN Fines.itemType = 'book' THEN Books.title
+        WHEN Fines.itemType = 'music' THEN Music.albumName
+        WHEN Fines.itemType = 'tech' THEN Technology.deviceName
+        ELSE NULL
+      END AS itemName
+    FROM 
+      Fines
+    JOIN 
+      Member ON Fines.memberId = Member.memberId
+    LEFT JOIN 
+      Books ON Fines.itemType = 'book' AND Fines.itemId = Books.bookId
+    LEFT JOIN 
+      Music ON Fines.itemType = 'music' AND Fines.itemId = Music.musicId
+    LEFT JOIN 
+      Technology ON Fines.itemType = 'tech' AND Fines.itemId = Technology.techId
+  `;
+
   db.query(sql, (err, result) => {
     if (err) {
       console.error("Error retrieving fines:", err);
@@ -13,6 +35,7 @@ router.get("/", (req, res) => {
     res.status(200).json(result);
   });
 });
+
 
 //get specific member fine
 router.get("/:id", (req, res) => {
