@@ -21,6 +21,36 @@ router.get("/", (req, res) => {
     res.status(200).json(result);
   });
 });
+router.get("/allInfo", (req, res) => {
+  const sql = `
+    SELECT 
+      CheckedOutBookHistory.*,
+      Books.title AS bookTitle,
+      Books.genre AS bookGenre,
+      Member.username AS memberUsername
+    FROM 
+      CheckedOutBookHistory
+    JOIN 
+      Books ON CheckedOutBookHistory.bookId = Books.bookId
+    JOIN 
+      Member ON CheckedOutBookHistory.memberId = Member.memberId
+  `;
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error("Error fetching checked-out books:", err);
+      return res
+        .status(500)
+        .send("Error getting checked-out books from the database.");
+    }
+
+    if (result.length === 0) {
+      return res.status(404).send("No checked-out books found.");
+    }
+
+    res.status(200).json(result);
+  });
+});
 
 router.get("/:id", (req, res) => {
   const memberId = req.params.id;
