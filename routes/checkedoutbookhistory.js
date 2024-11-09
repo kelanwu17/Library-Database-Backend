@@ -93,7 +93,8 @@ router.post("/insertCheckOutBook", (req, res) => {
     return res.status(400).json({ message: "Invalid request." });
   }
 
-  const limitSql = "SELECT * FROM checkedoutbookhistory WHERE memberId = ? AND timeStampReturn IS NULL";
+  const limitSql =
+    "SELECT * FROM checkedoutbookhistory WHERE memberId = ? AND timeStampReturn IS NULL";
   db.query(limitSql, [memberId], (limitErr, limitRes) => {
     if (limitErr) {
       console.error("Error checking existing checkout:", limitErr);
@@ -108,32 +109,41 @@ router.post("/insertCheckOutBook", (req, res) => {
 
     const checkSql =
       "SELECT * FROM checkedoutbookhistory WHERE memberId = ? AND bookId = ? AND instanceId = ? AND timeStampReturn IS NULL";
-    db.query(checkSql, [memberId, bookId, instanceId], (checkErr, checkResult) => {
-      if (checkErr) {
-        console.error("Error checking existing checkout:", checkErr);
-        return res.status(500).send("Error checking existing checkout.");
-      }
-
-      if (checkResult.length > 0) {
-        return res.status(400).send("This book is already checked out.");
-      }
-
-      const insertSql = `
-        INSERT INTO checkedoutbookhistory 
-        (memberId, bookId, instanceId, timeStampDue, timeStampCheckedOut) 
-        VALUES (?, ?, ?, NOW() + INTERVAL 2 WEEK, NOW())`;
-
-      db.query(insertSql, [memberId, bookId, instanceId], (err) => {
-        if (err) {
-          console.error("Error adding checked-out book:", err);
-          return res.status(500).send("Error adding checked-out book.");
+    db.query(
+      checkSql,
+      [memberId, bookId, instanceId],
+      (checkErr, checkResult) => {
+        if (checkErr) {
+          console.error("Error checking existing checkout:", checkErr);
+          return res.status(500).send("Error checking existing checkout.");
         }
-        res.status(201).send("Book checked out successfully.");
-      });
-    });
+
+        if (checkResult.length > 0) {
+          return res.status(400).send("This book is already checked out.");
+        }
+        let insertSql = ``;
+        if (role === "student") {
+          insertSql = `
+          INSERT INTO checkedoutbookhistory 
+          (memberId, bookId, instanceId, timeStampDue, timeStampCheckedOut) 
+          VALUES (?, ?, ?, NOW() + INTERVAL 1 WEEK, NOW())`;
+        } else if (role === "faculty") {
+          insertSql = `
+          INSERT INTO checkedoutbookhistory 
+          (memberId, bookId, instanceId, timeStampDue, timeStampCheckedOut) 
+          VALUES (?, ?, ?, NOW() + INTERVAL 2 WEEK, NOW())`;
+        }
+        db.query(insertSql, [memberId, bookId, instanceId], (err) => {
+          if (err) {
+            console.error("Error adding checked-out book:", err);
+            return res.status(500).send("Error adding checked-out book.");
+          }
+          res.status(201).send("Book checked out successfully.");
+        });
+      }
+    );
   });
 });
-
 
 // Mark a book as returned by updating the return timestamp
 router.put("/updateCheckOutBook/:id", (req, res) => {
