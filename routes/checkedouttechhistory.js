@@ -55,33 +55,57 @@ router.get("/:id", (req, res) => {
 
 // Insert a new checked-out tech item
 router.post("/insertCheckOutTech", (req, res) => {
-  const { memberId, techId, instanceId } = req.body;
+  const { memberId, techId, instanceId, role } = req.body;
+  if (!memberId || !techId || !instanceId) {
+    return res.status(400).json({ message: "Invalid request." });
+  }
 
-  const checkSql =
-    "SELECT * FROM checkedouttechhistory WHERE memberId = ? AND techId = ? AND instanceId = ? AND timeStampReturn = ?";
-
-  db.query(checkSql, [memberId, techId, instanceId, null], (checkErr, checkResult) => {
-    if (checkErr) {
-      console.error("Error checking tech item:", checkErr);
+  const limitSql =
+    "SELECT * FROM checkedouttechhistory WHERE memberId = ? AND timeStampReturn IS NULL";
+  db.query(limitSql, [memberId], (limitErr, limitRes) => {
+    if (limitErr) {
+      console.error("Error checking existing tech checkout:", limitErr);
       return res.status(500).send("Error checking existing tech checkout.");
     }
 
-    if (checkResult.length > 0) {
-      return res.status(400).send("Tech item already checked out.");
+    if (role === "student" && limitRes.length > 1) {
+      return res.status(400).send("Limit Exceeded");
+    } else if (role === "faculty" && limitRes.length > 2) {
+      return res.status(400).send("Limit Exceeded");
     }
 
-    const insertSql = `
-      INSERT INTO checkedouttechhistory 
-      (memberId, techId, instanceId, timeStampDue, timeStampCheckedOut) 
-      VALUES (?, ?, ?, NOW() + INTERVAL 2 WEEK, NOW())`;
-
-    db.query(insertSql, [memberId, techId, instanceId], (err) => {
-      if (err) {
-        console.error("Error inserting tech item:", err);
-        return res.status(500).send("Error adding tech item to database.");
+    const checkSql =
+      "SELECT * FROM checkedouttechhistory WHERE memberId = ? AND techId = ? AND instanceId = ? AND timeStampReturn IS NULL";
+    db.query(checkSql, [memberId, techId, instanceId], (checkErr, checkResult) => {
+      if (checkErr) {
+        console.error("Error checking tech item:", checkErr);
+        return res.status(500).send("Error checking existing tech checkout.");
       }
 
-      res.status(201).send("Tech item checked out successfully.");
+      if (checkResult.length > 0) {
+        return res.status(400).send("This tech item is already checked out.");
+      }
+
+      let insertSql = ``;
+      if (role === "student") {
+        insertSql = `
+          INSERT INTO checkedouttechhistory 
+          (memberId, techId, instanceId, timeStampDue, timeStampCheckedOut) 
+          VALUES (?, ?, ?, NOW() + INTERVAL 1 WEEK, NOW())`;
+      } else if (role === "faculty") {
+        insertSql = `
+          INSERT INTO checkedouttechhistory 
+          (memberId, techId, instanceId, timeStampDue, timeStampCheckedOut) 
+          VALUES (?, ?, ?, NOW() + INTERVAL 2 WEEK, NOW())`;
+      }
+
+      db.query(insertSql, [memberId, techId, instanceId], (err) => {
+        if (err) {
+          console.error("Error inserting tech item:", err);
+          return res.status(500).send("Error adding tech item to database.");
+        }
+        res.status(201).send("Tech item checked out successfully.");
+      });
     });
   });
 });

@@ -55,33 +55,57 @@ router.get("/:id", (req, res) => {
 
 // Insert a new checked-out music entry
 router.post("/insertCheckOutMusic", (req, res) => {
-  const { memberId, musicId, instanceId } = req.body;
+  const { memberId, musicId, instanceId, role } = req.body;
+  if (!memberId || !musicId || !instanceId) {
+    return res.status(400).json({ message: "Invalid request." });
+  }
 
-  const checkSql =
-    "SELECT * FROM checkedoutmusichistory WHERE memberId = ? AND musicId = ? AND instanceId = ? AND timeStampReturn = ?";
-  
-  db.query(checkSql, [memberId, musicId, instanceId, null], (checkErr, checkResult) => {
-    if (checkErr) {
-      console.error("Error checking existing checkout:", checkErr);
-      return res.status(500).send("Error checking for existing checkout.");
+  const limitSql =
+    "SELECT * FROM checkedoutmusichistory WHERE memberId = ? AND timeStampReturn IS NULL";
+  db.query(limitSql, [memberId], (limitErr, limitRes) => {
+    if (limitErr) {
+      console.error("Error checking existing music checkout:", limitErr);
+      return res.status(500).send("Error checking existing music checkout.");
     }
 
-    if (checkResult.length > 0) {
-      return res.status(400).send("This music is already checked out.");
+    if (role === "student" && limitRes.length > 1) {
+      return res.status(400).send("Limit Exceeded");
+    } else if (role === "faculty" && limitRes.length > 2) {
+      return res.status(400).send("Limit Exceeded");
     }
 
-    const insertSql = `
-      INSERT INTO checkedoutmusichistory 
-      (memberId, musicId, instanceId, timeStampDue, timeStampCheckedOut) 
-      VALUES (?, ?, ?, NOW() + INTERVAL 2 WEEK, NOW())`;
-
-    db.query(insertSql, [memberId, musicId, instanceId], (err) => {
-      if (err) {
-        console.error("Error inserting checked-out music:", err);
-        return res.status(500).send("Error adding checked-out music.");
+    const checkSql =
+      "SELECT * FROM checkedoutmusichistory WHERE memberId = ? AND musicId = ? AND instanceId = ? AND timeStampReturn IS NULL";
+    db.query(checkSql, [memberId, musicId, instanceId], (checkErr, checkResult) => {
+      if (checkErr) {
+        console.error("Error checking existing music checkout:", checkErr);
+        return res.status(500).send("Error checking existing music checkout.");
       }
 
-      res.status(201).send("Music checked out successfully.");
+      if (checkResult.length > 0) {
+        return res.status(400).send("This music item is already checked out.");
+      }
+
+      let insertSql = ``;
+      if (role === "student") {
+        insertSql = `
+          INSERT INTO checkedoutmusichistory 
+          (memberId, musicId, instanceId, timeStampDue, timeStampCheckedOut) 
+          VALUES (?, ?, ?, NOW() + INTERVAL 1 WEEK, NOW())`;
+      } else if (role === "faculty") {
+        insertSql = `
+          INSERT INTO checkedoutmusichistory 
+          (memberId, musicId, instanceId, timeStampDue, timeStampCheckedOut) 
+          VALUES (?, ?, ?, NOW() + INTERVAL 2 WEEK, NOW())`;
+      }
+
+      db.query(insertSql, [memberId, musicId, instanceId], (err) => {
+        if (err) {
+          console.error("Error inserting checked-out music:", err);
+          return res.status(500).send("Error adding checked-out music.");
+        }
+        res.status(201).send("Music checked out successfully.");
+      });
     });
   });
 });
