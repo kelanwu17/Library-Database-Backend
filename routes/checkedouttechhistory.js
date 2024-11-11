@@ -110,28 +110,78 @@ router.post("/insertCheckOutTech", (req, res) => {
   });
 });
 
-// Mark tech item as returned by updating the return timestamp
 router.put("/updateCheckoutTech/:id", (req, res) => {
   const { id } = req.params;
 
-  const sql = `
-    UPDATE checkedouttechhistory 
-    SET timeStampReturn = NOW() 
-    WHERE checkedOutTechHistoryId = ?`;
+  // Query to get instanceId and techId from checkedouttechhistory
+  const getTechDetails = `
+    SELECT instanceId, techId
+    FROM checkedouttechhistory
+    WHERE checkedOutTechHistoryId = ?;
+  `;
 
-  db.query(sql, [id], (err, result) => {
+  db.query(getTechDetails, [id], (err, rows) => {
     if (err) {
-      console.error("Error updating tech return timestamp:", err);
-      return res.status(500).send("Error updating tech return.");
+      console.error("Error retrieving tech details:", err);
+      return res.status(500).send("Error retrieving tech details.");
     }
 
-    if (result.affectedRows === 0) {
+    if (rows.length === 0) {
       return res.status(404).send("Checked-out tech item not found.");
     }
 
-    res.status(200).send("Tech item returned successfully.");
+    const { instanceId, techId } = rows[0];
+
+    // Update checkedouttechhistory to set the return timestamp
+    const updateReturnTimestamp = `
+      UPDATE checkedouttechhistory
+      SET timeStampReturn = NOW()
+      WHERE checkedOutTechHistoryId = ?;
+    `;
+
+    db.query(updateReturnTimestamp, [id], (err, result) => {
+      if (err) {
+        console.error("Error updating tech return timestamp:", err);
+        return res.status(500).send("Error updating the return timestamp.");
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).send("Checked-out tech item not found.");
+      }
+
+      // Update techinstance to set checkedOutStatus to FALSE
+      const updateTechInstance = `
+        UPDATE techinstance
+        SET checkedOutStatus = FALSE
+        WHERE instanceId = ?;
+      `;
+
+      db.query(updateTechInstance, [instanceId], (err) => {
+        if (err) {
+          console.error("Error updating tech instance:", err);
+          return res.status(500).send("Error updating the tech instance.");
+        }
+
+        // Update technology to increment the count by 1
+        const updateTechCount = `
+          UPDATE technology
+          SET count = count + 1
+          WHERE techId = ?;
+        `;
+
+        db.query(updateTechCount, [techId], (err) => {
+          if (err) {
+            console.error("Error updating tech count:", err);
+            return res.status(500).send("Error updating the tech count.");
+          }
+
+          res.status(200).send("Tech item returned successfully.");
+        });
+      });
+    });
   });
 });
+
 
 // Delete a checked-out tech entry
 router.delete("/deleteCheckOutTech/:id", (req, res) => {
