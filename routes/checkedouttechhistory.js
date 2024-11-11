@@ -127,6 +127,7 @@ router.put("/updateCheckoutTech/:id", (req, res) => {
     }
 
     if (rows.length === 0) {
+      console.error("No tech details");
       return res.status(404).send("Checked-out tech item not found.");
     }
 
@@ -146,6 +147,7 @@ router.put("/updateCheckoutTech/:id", (req, res) => {
       }
 
       if (result.affectedRows === 0) {
+        console.error("Tech item not found")
         return res.status(404).send("Checked-out tech item not found.");
       }
 
