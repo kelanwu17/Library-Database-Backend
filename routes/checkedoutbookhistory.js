@@ -148,6 +148,7 @@ router.post("/insertCheckOutBook", (req, res) => {
 // Mark a book as returned by updating the return timestamp
 router.put("/updateCheckOutBook/:id", (req, res) => {
   const { id } = req.params;
+  const { instanceId, bookId } =req.body;
 
   const sql = `
     UPDATE checkedoutbookhistory 
@@ -164,9 +165,36 @@ router.put("/updateCheckOutBook/:id", (req, res) => {
       return res.status(404).send("Checked-out book not found.");
     }
 
-    res.status(200).send("Book returned successfully.");
+    // Update bookinstance and books table after successful timestamp update
+    const updateBookInstance = `
+      UPDATE bookinstance
+      SET checkedOutStatus = FALSE
+      WHERE instanceId = ?;`;
+
+    const updateBookCount = `
+      UPDATE books
+      SET count = count + 1
+      WHERE bookId = ?;`;
+
+    // Execute updates for bookinstance and books
+    db.query(updateBookInstance, [instanceId], (err) => {
+      if (err) {
+        console.error("Error updating book instance:", err);
+        return res.status(500).send("Error updating the book instance.");
+      }
+
+      db.query(updateBookCount, [bookId], (err) => {
+        if (err) {
+          console.error("Error updating book count:", err);
+          return res.status(500).send("Error updating the book count.");
+        }
+
+        res.status(200).send("Book returned successfully.");
+      });
+    });
   });
 });
+
 
 // Delete a checked-out book entry
 router.delete("/deleteCheckOutBook/:id", (req, res) => {
