@@ -151,7 +151,7 @@ router.put("/updateCheckoutTech/:id", (req, res) => {
 
       // Update techinstance to set checkedOutStatus to FALSE
       const updateTechInstance = `
-        UPDATE techinstance
+        UPDATE technologyinstance
         SET checkedOutStatus = FALSE
         WHERE instanceId = ?;
       `;
