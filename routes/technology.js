@@ -202,10 +202,16 @@ function adjustTechnologyInstances(techId, currentCount, newCount, res) {
 router.put("/deactivateTech/:id", (req, res) => {
   const id = req.params.id;
   const sql = "UPDATE technology SET availabilityStatus = 0 WHERE techId = ?";
-  db.query(sql, [id], (err) => {
+
+
+  db.query(sql, [id], (err, results) => {
     if (err) {
       console.error("Error deleting tech:", err.message);
       return res.status(500).send("Error deleting tech.");
+    }
+    if (results.affectedRows === 0) {
+      console.warn(`No technology found with techId: ${id}`);
+      return res.status(404).send("Tech not found.");
     }
     res.status(200).send("Tech deactivated");
   });
