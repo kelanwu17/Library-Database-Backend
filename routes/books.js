@@ -265,7 +265,7 @@ router.put("/updateBook/:bookId", (req, res) => {
 
 router.put("/deactivateBook/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "UPDATE books SET availabilityStatus = 0";
+  const sql = "UPDATE books SET availabilityStatus = 0 WHERE bookId = ?";
   db.query(sql, [id], (err) => {
     if (err) {
       console.error("Error deleting book:", err.message);

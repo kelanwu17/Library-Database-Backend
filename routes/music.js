@@ -207,7 +207,7 @@ router.put("/updateMusic/:id", (req, res) => {
 
 router.put("/deactivateMusic/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "UPDATE music SET availabilityStatus = 0";
+  const sql = "UPDATE music SET availabilityStatus = 0 WHERE musicId = ?";
   db.query(sql, [id], (err) => {
     if (err) {
       console.error("Error deleting music:", err.message);
