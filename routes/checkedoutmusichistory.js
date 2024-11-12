@@ -113,24 +113,63 @@ router.post("/insertCheckOutMusic", (req, res) => {
 router.put("/updateCheckOutMusic/:id", (req, res) => {
   const { id } = req.params;
 
-  const sql = `
-    UPDATE checkedoutmusichistory 
-    SET timeStampReturn = NOW() 
-    WHERE checkedOutMusicHistoryId = ?`;
+  // Step 1: Retrieve musicId and music title
+  const getMusicAndWaitlistSql = `
+    SELECT cmh.musicId, m.albumName AS musicTitle, mem.email 
+    FROM checkedoutmusichistory cmh
+    JOIN Music m ON cmh.musicId = m.musicId
+    LEFT JOIN waitlist w ON cmh.musicId = w.itemId
+    LEFT JOIN Member mem ON w.memberId = mem.memberId
+    WHERE cmh.checkedOutMusicHistoryId = ? 
+      AND w.itemType = 'music' 
+      AND w.active = TRUE
+    ORDER BY w.waitlistTimeStamp ASC
+    LIMIT 1`;
 
-  db.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error("Error updating return timestamp:", err);
-      return res.status(500).send("Error updating the return timestamp.");
+  db.query(getMusicAndWaitlistSql, [id], (waitlistErr, waitlistRes) => {
+    if (waitlistErr) {
+      console.error("Error fetching waitlist:", waitlistErr);
+      return res.status(500).send("Error processing waitlist.");
     }
 
-    if (result.affectedRows === 0) {
-      return res.status(404).send("Checked-out music not found.");
-    }
+    const nextWaitlistEntry = waitlistRes[0];
+    const nextWaitlistMemberEmail = nextWaitlistEntry ? nextWaitlistEntry.email : null;
+    const musicTitle = nextWaitlistEntry ? nextWaitlistEntry.musicTitle : null;
 
-    res.status(200).send("Music returned successfully.");
+    // Step 2: Update the return timestamp
+    const updateReturnSql = `
+      UPDATE checkedoutmusichistory 
+      SET timeStampReturn = NOW() 
+      WHERE checkedOutMusicHistoryId = ?`;
+      
+    db.query(updateReturnSql, [id], (err, result) => {
+      if (err) {
+        console.error("Error updating return timestamp:", err);
+        return res.status(500).send("Error updating the return timestamp.");
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).send("Checked-out music not found.");
+      }
+
+      // Step 3: Send notification if there is a next waitlist member
+      if (nextWaitlistMemberEmail && musicTitle) {
+        sendAvailableToCheckOut(nextWaitlistMemberEmail, musicTitle)
+          .then(() => {
+            console.log("Notification email sent to waitlist member.");
+          })
+          .catch((emailErr) => {
+            console.error("Error sending email notification:", emailErr);
+          });
+      } else {
+        console.log("No waitlist entries. No email sent.");
+      }
+
+      res.status(200).send("Music returned successfully.");
+    });
   });
 });
+
 
 
 // Delete a checked-out music entry

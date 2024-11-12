@@ -113,24 +113,63 @@ router.post("/insertCheckOutTech", (req, res) => {
 router.put("/updateCheckOutTech/:id", (req, res) => {
   const { id } = req.params;
 
-  const sql = `
-    UPDATE checkedouttechhistory 
-    SET timeStampReturn = NOW() 
-    WHERE checkedOutTechHistoryId = ?`;
+  // Step 1: Retrieve techId and waitlist information for notification
+  const getTechAndWaitlistSql = `
+    SELECT cth.techId, t.deviceName AS techName, m.email 
+    FROM checkedouttechhistory cth
+    JOIN Technology t ON cth.techId = t.techId
+    LEFT JOIN waitlist w ON cth.techId = w.itemId
+    LEFT JOIN Member m ON w.memberId = m.memberId
+    WHERE cth.checkedOutTechHistoryId = ? 
+      AND w.itemType = 'tech' 
+      AND w.active = TRUE
+    ORDER BY w.waitlistTimeStamp ASC
+    LIMIT 1`;
 
-  db.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error("Error updating return timestamp:", err);
-      return res.status(500).send("Error updating the return timestamp.");
+  db.query(getTechAndWaitlistSql, [id], (waitlistErr, waitlistRes) => {
+    if (waitlistErr) {
+      console.error("Error fetching waitlist:", waitlistErr);
+      return res.status(500).send("Error processing waitlist.");
     }
 
-    if (result.affectedRows === 0) {
-      return res.status(404).send("Checked-out tech not found.");
-    }
+    const nextWaitlistEntry = waitlistRes[0];
+    const nextWaitlistMemberEmail = nextWaitlistEntry ? nextWaitlistEntry.email : null;
+    const techName = nextWaitlistEntry ? nextWaitlistEntry.techName : null;
 
-    res.status(200).send("Tech returned successfully.");
+    // Step 2: Update the return timestamp
+    const updateReturnSql = `
+      UPDATE checkedouttechhistory 
+      SET timeStampReturn = NOW() 
+      WHERE checkedOutTechHistoryId = ?`;
+
+    db.query(updateReturnSql, [id], (err, result) => {
+      if (err) {
+        console.error("Error updating return timestamp:", err);
+        return res.status(500).send("Error updating the return timestamp.");
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).send("Checked-out tech not found.");
+      }
+
+      // Step 3: Send notification if there is a next waitlist member
+      if (nextWaitlistMemberEmail && techName) {
+        sendAvailableToCheckOut(nextWaitlistMemberEmail, techName)
+          .then(() => {
+            console.log("Notification email sent to waitlist member.");
+          })
+          .catch((emailErr) => {
+            console.error("Error sending email notification:", emailErr);
+          });
+      } else {
+        console.log("No waitlist entries. No email sent.");
+      }
+
+      res.status(200).send("Tech returned successfully.");
+    });
   });
 });
+
 
 
 // Delete a checked-out tech entry
