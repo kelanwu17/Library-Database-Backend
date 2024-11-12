@@ -110,77 +110,25 @@ router.post("/insertCheckOutTech", (req, res) => {
   });
 });
 
-router.put("/updateCheckoutTech/:id", (req, res) => {
+router.put("/updateCheckOutTech/:id", (req, res) => {
   const { id } = req.params;
 
-  // Query to get instanceId and techId from checkedouttechhistory
-  const getTechDetails = `
-    SELECT instanceId, techId
-    FROM checkedouttechhistory
-    WHERE checkedOutTechHistoryId = ?;
-  `;
+  const sql = `
+    UPDATE checkedouttechhistory 
+    SET timeStampReturn = NOW() 
+    WHERE checkedOutTechHistoryId = ?`;
 
-  db.query(getTechDetails, [id], (err, rows) => {
+  db.query(sql, [id], (err, result) => {
     if (err) {
-      console.error("Error retrieving tech details:", err);
-      return res.status(500).send("Error retrieving tech details.");
+      console.error("Error updating return timestamp:", err);
+      return res.status(500).send("Error updating the return timestamp.");
     }
 
-    if (rows.length === 0) {
-      console.error("No tech details");
-      return res.status(404).send("Checked-out tech item not found.");
+    if (result.affectedRows === 0) {
+      return res.status(404).send("Checked-out tech not found.");
     }
 
-    const { instanceId, techId } = rows[0];
-
-    // Update checkedouttechhistory to set the return timestamp
-    const updateReturnTimestamp = `
-      UPDATE checkedouttechhistory
-      SET timeStampReturn = NOW()
-      WHERE checkedOutTechHistoryId = ?;
-    `;
-
-    db.query(updateReturnTimestamp, [id], (err, result) => {
-      if (err) {
-        console.error("Error updating tech return timestamp:", err);
-        return res.status(500).send("Error updating the return timestamp.");
-      }
-
-      if (result.affectedRows === 0) {
-        console.error("Tech item not found")
-        return res.status(404).send("Checked-out tech item not found.");
-      }
-
-      // Update techinstance to set checkedOutStatus to FALSE
-      const updateTechInstance = `
-        UPDATE technologyinstance
-        SET checkedOutStatus = FALSE
-        WHERE instanceId = ?;
-      `;
-
-      db.query(updateTechInstance, [instanceId], (err) => {
-        if (err) {
-          console.error("Error updating tech instance:", err);
-          return res.status(500).send("Error updating the tech instance.");
-        }
-
-        // Update technology to increment the count by 1
-        const updateTechCount = `
-          UPDATE technology
-          SET count = count + 1
-          WHERE techId = ?;
-        `;
-
-        db.query(updateTechCount, [techId], (err) => {
-          if (err) {
-            console.error("Error updating tech count:", err);
-            return res.status(500).send("Error updating the tech count.");
-          }
-
-          res.status(200).send("Tech item returned successfully.");
-        });
-      });
-    });
+    res.status(200).send("Tech returned successfully.");
   });
 });
 
