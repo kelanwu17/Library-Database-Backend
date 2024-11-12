@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
-const { checkedOutMail } = require("../mailer/mailer");
+const { checkedOutMail, sendAvailableToCheckOut } = require("../mailer/mailer");
 
 // Get all checked-out books
 router.get("/", (req, res) => {
@@ -148,22 +148,60 @@ router.post("/insertCheckOutBook", (req, res) => {
 router.put("/updateCheckOutBook/:id", (req, res) => {
   const { id } = req.params;
 
-  const sql = `
-    UPDATE checkedoutbookhistory 
-    SET timeStampReturn = NOW() 
-    WHERE checkedOutBookHistoryId = ?`;
+  // Step 1: Retrieve bookId, book title, and the next waitlist member's email
+  const getBookAndWaitlistSql = `
+    SELECT cbh.bookId, b.title AS bookTitle, m.email 
+    FROM checkedoutbookhistory cbh
+    JOIN Books b ON cbh.bookId = b.bookId
+    LEFT JOIN Waitlist w ON cbh.bookId = w.itemId
+    LEFT JOIN Member m ON w.memberId = m.memberId
+    WHERE cbh.checkedOutBookHistoryId = ? 
+      AND w.itemType = 'book' 
+      AND w.active = TRUE
+    ORDER BY w.waitlistTimeStamp ASC
+    LIMIT 1`;
 
-  db.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error("Error updating return timestamp:", err);
-      return res.status(500).send("Error updating the return timestamp.");
+  db.query(getBookAndWaitlistSql, [id], (waitlistErr, waitlistRes) => {
+    if (waitlistErr) {
+      console.error("Error fetching waitlist:", waitlistErr);
+      return res.status(500).send("Error processing waitlist.");
     }
 
-    if (result.affectedRows === 0) {
-      return res.status(404).send("Checked-out book not found.");
-    }
+    const nextWaitlistEntry = waitlistRes[0];
+    const nextWaitlistMemberEmail = nextWaitlistEntry ? nextWaitlistEntry.email : null;
+    const bookTitle = nextWaitlistEntry ? nextWaitlistEntry.bookTitle : null;
 
-    res.status(200).send("Book returned successfully.");
+    // Step 2: Update the return timestamp
+    const updateReturnSql = `
+      UPDATE checkedoutbookhistory 
+      SET timeStampReturn = NOW() 
+      WHERE checkedOutBookHistoryId = ?`;
+      
+    db.query(updateReturnSql, [id], (err, result) => {
+      if (err) {
+        console.error("Error updating return timestamp:", err);
+        return res.status(500).send("Error updating the return timestamp.");
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).send("Checked-out book not found.");
+      }
+
+      // Step 3: Send notification if there is a next waitlist member
+      if (nextWaitlistMemberEmail && bookTitle) {
+        sendAvailableToCheckOut(nextWaitlistMemberEmail, bookTitle)
+          .then(() => {
+            console.log("Notification email sent to waitlist member.");
+          })
+          .catch((emailErr) => {
+            console.error("Error sending email notification:", emailErr);
+          });
+      } else {
+        console.log("No waitlist entries. No email sent.");
+      }
+
+      res.status(200).send("Book returned successfully.");
+    });
   });
 });
 

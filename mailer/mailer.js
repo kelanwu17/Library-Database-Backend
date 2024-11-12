@@ -26,6 +26,21 @@ const sendWelcomeMail = (to, firstName, username, password) => {
   return transporter.sendMail(mailOptions);
 };
 
+const sendAvailableToCheckOut = (to, bookTitle) => {
+  const mailOptions = {
+    from: process.env.EMAIL,
+    to,
+    subject: "Your waitlisted item is available to check out",
+    text: `The book "${bookTitle}" that you waitlisted is now available for checkout.`,
+    html: `
+      <h1>Your waitlist item is ready to checkout!</h1>
+      <p>The book <strong>"${bookTitle}"</strong> is now available for you to check out. Please visit the library to claim it.</p>
+    `,
+  };
+
+  return transporter.sendMail(mailOptions);
+};
+
 const checkedOutMail = (to, itemName) => {
   const mailOptions = {
     from: process.env.EMAIL,
@@ -71,4 +86,4 @@ const waitlistMail = (to, itemName) => {
   return transporter.sendMail(mailOptions);
 }
 
-module.exports = {sendWelcomeMail, checkedOutMail, reserveMail, waitlistMail};
+module.exports = {sendWelcomeMail, sendAvailableToCheckOut, checkedOutMail, reserveMail, waitlistMail};

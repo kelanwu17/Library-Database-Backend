@@ -66,7 +66,7 @@ router.post("/createTechnology", (req, res) => {
       deviceName,
       modelNumber,
       count,
-      availabilityStatus,
+      1,
       monetaryValue,
       lastUpdatedBy,
       imgUrl,
