@@ -145,28 +145,79 @@ router.post("/insertCheckOutBook", (req, res) => {
   });
 });
 
-// Mark a book as returned by updating the return timestamp
 router.put("/updateCheckOutBook/:id", (req, res) => {
   const { id } = req.params;
 
-  const sql = `
-    UPDATE checkedoutbookhistory 
-    SET timeStampReturn = NOW() 
-    WHERE checkedOutBookHistoryId = ?`;
+  // Query to get instanceId and bookId from checkedoutbookhistory
+  const getBookDetails = `
+    SELECT instanceId, bookId
+    FROM checkedoutbookhistory
+    WHERE checkedOutBookHistoryId = ?;
+  `;
 
-  db.query(sql, [id], (err, result) => {
+  db.query(getBookDetails, [id], (err, rows) => {
     if (err) {
-      console.error("Error updating return timestamp:", err);
-      return res.status(500).send("Error updating the return timestamp.");
+      console.error("Error retrieving book details:", err);
+      return res.status(500).send("Error retrieving book details.");
     }
 
-    if (result.affectedRows === 0) {
+    if (rows.length === 0) {
       return res.status(404).send("Checked-out book not found.");
     }
 
-    res.status(200).send("Book returned successfully.");
+    const { instanceId, bookId } = rows[0];
+
+    // Update checkedoutbookhistory to set the return timestamp
+    const updateReturnTimestamp = `
+      UPDATE checkedoutbookhistory
+      SET timeStampReturn = NOW()
+      WHERE checkedOutBookHistoryId = ?;
+    `;
+
+    db.query(updateReturnTimestamp, [id], (err, result) => {
+      if (err) {
+        console.error("Error updating return timestamp:", err);
+        return res.status(500).send("Error updating the return timestamp.");
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).send("Checked-out book not found.");
+      }
+
+      // Update bookinstance to set checkedOutStatus to FALSE
+      const updateBookInstance = `
+        UPDATE bookinstance
+        SET checkedOutStatus = FALSE
+        WHERE instanceId = ?;
+      `;
+
+      db.query(updateBookInstance, [instanceId], (err) => {
+        if (err) {
+          console.error("Error updating book instance:", err);
+          return res.status(500).send("Error updating the book instance.");
+        }
+
+        // Update books to increment the count by 1
+        const updateBookCount = `
+          UPDATE books
+          SET count = count + 1
+          WHERE bookId = ?;
+        `;
+
+        db.query(updateBookCount, [bookId], (err) => {
+          if (err) {
+            console.error("Error updating book count:", err);
+            return res.status(500).send("Error updating the book count.");
+          }
+
+          res.status(200).send("Book returned successfully.");
+        });
+      });
+    });
   });
 });
+
+
 
 // Delete a checked-out book entry
 router.delete("/deleteCheckOutBook/:id", (req, res) => {

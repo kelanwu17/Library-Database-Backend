@@ -110,28 +110,78 @@ router.post("/insertCheckOutMusic", (req, res) => {
   });
 });
 
-// Mark music as returned by updating the return timestamp
 router.put("/updateCheckoutMusic/:id", (req, res) => {
   const { id } = req.params;
 
-  const sql = `
-    UPDATE checkedoutmusichistory 
-    SET timeStampReturn = NOW() 
-    WHERE checkedOutMusicHistoryId = ?`;
+  // Query to get instanceId and musicId from checkedoutmusichistory
+  const getMusicDetails = `
+    SELECT instanceId, musicId
+    FROM checkedoutmusichistory
+    WHERE checkedOutMusicHistoryId = ?;
+  `;
 
-  db.query(sql, [id], (err, result) => {
+  db.query(getMusicDetails, [id], (err, rows) => {
     if (err) {
-      console.error("Error updating return timestamp:", err);
-      return res.status(500).send("Error updating return timestamp.");
+      console.error("Error retrieving music details:", err);
+      return res.status(500).send("Error retrieving music details.");
     }
 
-    if (result.affectedRows === 0) {
+    if (rows.length === 0) {
       return res.status(404).send("Checked-out music record not found.");
     }
 
-    res.status(200).send("Music returned successfully.");
+    const { instanceId, musicId } = rows[0];
+
+    // Update checkedoutmusichistory to set the return timestamp
+    const updateReturnTimestamp = `
+      UPDATE checkedoutmusichistory
+      SET timeStampReturn = NOW()
+      WHERE checkedOutMusicHistoryId = ?;
+    `;
+
+    db.query(updateReturnTimestamp, [id], (err, result) => {
+      if (err) {
+        console.error("Error updating music return timestamp:", err);
+        return res.status(500).send("Error updating the return timestamp.");
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).send("Checked-out music record not found.");
+      }
+
+      // Update musicinstance to set checkedOutStatus to FALSE
+      const updateMusicInstance = `
+        UPDATE musicinstance
+        SET checkedOutStatus = FALSE
+        WHERE instanceId = ?;
+      `;
+
+      db.query(updateMusicInstance, [instanceId], (err) => {
+        if (err) {
+          console.error("Error updating music instance:", err);
+          return res.status(500).send("Error updating the music instance.");
+        }
+
+        // Update music to increment the count by 1
+        const updateMusicCount = `
+          UPDATE music
+          SET count = count + 1
+          WHERE musicId = ?;
+        `;
+
+        db.query(updateMusicCount, [musicId], (err) => {
+          if (err) {
+            console.error("Error updating music count:", err);
+            return res.status(500).send("Error updating the music count.");
+          }
+
+          res.status(200).send("Music returned successfully.");
+        });
+      });
+    });
   });
 });
+
 
 // Delete a checked-out music entry
 router.delete("/deleteCheckOutMusic/:id", (req, res) => {
