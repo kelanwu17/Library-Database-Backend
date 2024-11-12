@@ -148,13 +148,13 @@ router.post("/insertCheckOutBook", (req, res) => {
 router.put("/updateCheckOutBook/:id", (req, res) => {
   const { id } = req.params;
 
-  // Step 1: Retrieve bookId, book title, and the next waitlist member's email
+  // Step 1: Retrieve bookId and book title
   const getBookAndWaitlistSql = `
     SELECT cbh.bookId, b.title AS bookTitle, m.email 
     FROM checkedoutbookhistory cbh
     JOIN Books b ON cbh.bookId = b.bookId
-    LEFT JOIN Waitlist w ON cbh.bookId = w.itemId
-    LEFT JOIN Member m ON w.memberId = m.memberId
+    LEFT JOIN waitlist w ON cbh.bookId = w.itemId
+    LEFT JOIN member m ON w.memberId = m.memberId
     WHERE cbh.checkedOutBookHistoryId = ? 
       AND w.itemType = 'book' 
       AND w.active = TRUE
