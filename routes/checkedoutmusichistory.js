@@ -19,6 +19,39 @@ router.get("/", (req, res) => {
   });
 });
 
+router.get("/get/allMusicInfo", (req, res) => {
+  const sql = `
+    SELECT 
+      CheckedOutMusicHistory.*,
+      Music.albumName AS musicAlbumName,  -- Ensure the column name matches
+      Music.musicGenre AS musicGenre,
+      Member.username AS memberUsername
+    FROM 
+      CheckedOutMusicHistory
+    JOIN 
+      Music ON CheckedOutMusicHistory.musicId = Music.musicId
+    JOIN 
+      Member ON CheckedOutMusicHistory.memberId = Member.memberId
+  `;
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error("Error fetching checked-out music:", err);
+      return res
+        .status(500)
+        .send("Error getting checked-out music from the database.");
+    }
+
+    if (result.length === 0) {
+      return res.status(404).send("No checked-out music found.");
+    }
+
+    res.status(200).json(result);
+  });
+});
+
+
+
 router.get("/:id", (req, res) => {
   const memberId = req.params.id;
   const sql = "SELECT * FROM checkedoutmusichistory WHERE memberId = ?";
@@ -52,6 +85,7 @@ router.get("/:id", (req, res) => {
       });
   });
 });
+
 
 // Insert a new checked-out music entry
 router.post("/insertCheckOutMusic", (req, res) => {
