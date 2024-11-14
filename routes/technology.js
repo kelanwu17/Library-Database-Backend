@@ -199,7 +199,7 @@ function adjustTechnologyInstances(techId, currentCount, newCount, res) {
   }
 }
 
-router.put("/deactivateTech/:id", (req, res) => {
+router.put("/deactivateTechnology/:id", (req, res) => {
   const id = req.params.id;
   const sql = "UPDATE technology SET availabilityStatus = 0 WHERE techId = ?";
 
